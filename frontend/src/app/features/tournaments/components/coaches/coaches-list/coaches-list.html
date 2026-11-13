@@ -1,0 +1,109 @@
+<section class="coaches-page">
+    <header class="page-header">
+      <div>
+        <h1>Тренера</h1>
+        <p>Справочник тренеров турнира</p>
+      </div>
+  
+      <button class="primary" (click)="openCreate()">+ Тренер</button>
+    </header>
+  
+    @if (error()) {
+      <div class="error">{{ error() }}</div>
+    }
+  
+    @if (loading()) {
+        <p class="empty-message">Загрузка тренеров...</p>
+      } @else if (coaches().length === 0) {
+        <p class="empty-message">Тренера не найдены</p>
+      } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              @for (field of visibleFields(); track field.name) {
+                <th>{{ labelFields[field.name] || field.name }}</th>
+              }
+              <th>Действия</th>
+            </tr>
+          </thead>
+  
+          <tbody>
+            @for (coach of coaches(); track coach['id']) {
+              <tr>
+                @for (field of visibleFields(); track field.name) {
+                  <td>
+                    @if (field.name === 'club_id') {
+                        {{ getClubName($any(coach)['club_id']) }}
+                    } @else {
+                        {{ coach[field.name] ?? '—' }} 
+                    }
+                </td>
+                }
+                <td class="actions">
+                  <button (click)="openEdit(coach)">Изменить</button>
+                  <button class="delete-button" (click)="remove(coach)">
+                    Удалить
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">Тренеры ещё не созданы</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  
+    @if (formOpen()) {
+        <div class="modal-backdrop">
+          <section class="modal">
+            <h2>{{ editingId() ? 'Редактировать тренера' : 'Новый тренер' }}</h2>
+    
+            <div class="form-fields">
+              @for (field of fields(); track field.name) {
+                @if (field.name !== 'id') {
+                    <label>
+                        <span>
+                            {{ labelFields[field.name] || field.name }}
+                            @if (field.required) {
+                            *
+                            }
+                        </span>
+                        @if (field.name == 'club_id') {
+                            <select
+                                [(ngModel)]="formData[field.name]"
+                                [name]="field.name">
+                                @for (club of clubs(); track club['id']) {
+                                    <option [ngValue]="club.id">{{ getClubName(club['id']) }}</option>
+                                }
+                            </select>
+                        } @else {
+                            <input
+                                [type]="isDateField(field) ? 'date' : 'text'"
+                                [(ngModel)]="formData[field.name]"
+                                [required]="field.required"
+                            />
+                        }
+                    </label>                      
+                }
+              }
+            </div>
+    
+            <div class="modal-actions">
+              <button (click)="formOpen.set(false)">Отмена</button>
+              <button
+                class="primary-button"
+                (click)="save()"
+                [disabled]="saving()"
+              >
+                {{ saving() ? 'Сохранение...' : 'Сохранить' }}
+              </button>
+            </div>
+          </section>
+        </div>
+      }
+  
+  </section>

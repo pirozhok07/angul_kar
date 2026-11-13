@@ -1,0 +1,149 @@
+<section class="categories-page">
+    <header class="page-header">
+      <div>
+        <h1>Категории</h1>
+        <p>Возрастные и весовые категории турнира</p>
+      </div>
+  
+      <div class="header-actions">
+        <button (click)="showPreview()">Распределить атлетов</button>
+        <button class="primary" (click)="openCreate()">+ Категория</button>
+      </div>
+    </header>
+  
+    @if (error()) {
+      <div class="error">{{ error() }}</div>
+    }
+  
+    @if (loading()) {
+      <p class="empty-message">Загрузка категорий...</p>
+    } @else if (categories().length === 0) {
+      <p class="empty-message">Категории не найдены</p>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              @for (field of visibleFields(); track field.name) {
+                <th>{{ labelFields[field.name] || field.name }}</th>
+              }
+              <th>Действия</th>
+            </tr>
+          </thead>
+  
+          <tbody>
+            @for (category of categories(); track category['id']) {
+              <tr>
+                @for (field of visibleFields(); track field.name) {
+                  <td>{{ category[field.name] ?? '—' }}</td>
+                }
+                <td class="actions">
+                  <button (click)="openEdit(category)">Изменить</button>
+                  <button class="delete-button" (click)="remove(category)">
+                    Удалить
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">Категории ещё не созданы</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  
+    @if (formOpen()) {
+      <div class="overlay">
+        <div class="modal">
+          <h2>{{ editingId() ? 'Изменить категорию' : 'Новая категория' }}</h2>
+  
+          <label>
+            Название
+            <input [(ngModel)]="form['name']" />
+          </label>
+  
+          <label>
+            Дисциплина
+            <select [(ngModel)]="form['discipline']">
+              <option value="kata">Ката</option>
+              <option value="kumite">Кумите</option>
+            </select>
+          </label>
+  
+          <label>
+            Пол
+            <select [(ngModel)]="form['gender']">
+              <option value="male">Мужской</option>
+              <option value="female">Женский</option>
+            </select>
+          </label>
+  
+          <div class="form-row">
+            <label>
+              Возраст от
+              <input type="number" [(ngModel)]="form['age_min']" />
+            </label>
+  
+            <label>
+              Возраст до
+              <input type="number" [(ngModel)]="form['age_max']" />
+            </label>
+          </div>
+  
+          @if (form['discipline'] === 'kumite') {
+            <div class="form-row">
+              <label>
+                Вес от (кг)
+                <input type="number" step="0.1" [(ngModel)]="form['weight_min']" />
+              </label>
+  
+              <label>
+                Вес до (кг)
+                <input type="number" step="0.1" [(ngModel)]="form['weight_max']" />
+              </label>
+            </div>
+          }
+  
+          <div class="modal-actions">
+            <button (click)="formOpen.set(false)">Отмена</button>
+            <button class="primary" [disabled]="saving()" (click)="save()">
+              Сохранить
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  
+    @if (previewOpen()) {
+      <div class="overlay">
+        <div class="modal preview-modal">
+          <h2>Предварительное распределение</h2>
+          <p>Дата турнира: {{ previewData()?.competition_date }}</p>
+  
+          @for (athlete of previewData()?.athletes ?? []; track athlete.athlete_id) {
+            <div class="preview-row">
+              <strong>Атлет №{{ athlete.athlete_id }}</strong>
+              <span>Возраст: {{ athlete.age ?? 'не указан' }}</span>
+  
+              @if (athlete.suggestions.length) {
+                @for (suggestion of athlete.suggestions; track suggestion.category_id) {
+                  <span>{{ suggestion.category_name }}</span>
+                }
+              } @else {
+                <span class="muted">Нет подходящей категории</span>
+              }
+            </div>
+          }
+  
+          <div class="modal-actions">
+            <button (click)="previewOpen.set(false)">Закрыть</button>
+            <button class="primary" (click)="confirmDistribution()">
+              Подтвердить распределение
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </section>

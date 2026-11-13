@@ -1,0 +1,138 @@
+@if (loading()) {
+    <div class="loading">
+        Загрузка турниров...
+    </div>
+} @else if (error()) {
+    <div class="error">
+        {{ error() }}
+        <a routerLink="/tournaments">Вернуться к турнирам</a>
+    </div> 
+} @else if (tournament(); as t) {
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">🥋</span>
+                <div>
+                    <strong>Karate Manager</strong>
+                    <small>Tournament System</small>
+                </div>
+            </div>
+
+            <div class="tournament-info">
+                <small>ТЕКУЩИЙ ТУРНИР</small>
+                <h3>{{ t.name }}</h3>
+                <span class="status">
+                    {{ t.database_status === 'ready'
+                        ? 'База готова'
+                        : 'База не готова' }}
+                </span>
+            </div>
+
+            <nav class="navigation">
+
+                <a routerLink="."
+                    [routerLinkActiveOptions]="{ exact: true }"
+                    routerLinkActive="active">
+                    <span>*</span> Обзор
+                </a>
+
+                <a [routerLink]="['athletes']" routerLinkActive="active">
+                    <span>*</span> Спортсмены
+                </a>
+
+                <a [routerLink]="['clubs']" routerLinkActive="active">
+                    <span>*</span> Клубы
+                </a>
+
+                <a [routerLink]="['coaches']" routerLinkActive="active">
+                    <span>*</span> Тренера
+                </a>
+
+                <a [routerLink]="['categories']" routerLinkActive="active">
+                    <span>*</span> Категории
+                </a>
+
+                <a routerLink="judges" routerLinkActive="active">
+                    <span>*</span> Судьи
+                </a>
+
+                <a routerLink="results" routerLinkActive="active">
+                    <span>*</span> Результаты
+                </a>
+
+            </nav>
+
+            <a class="back-link" routerLink="/tournaments">
+                Все турниры
+            </a>
+
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="topbar">
+                <div>
+                    <h1>{{ t.name }}</h1>
+                    <p>Панель управления серевнованиями</p>
+                </div>
+            </header>
+
+            <section class="content">
+
+                <div class="welcome">
+                    <h2>Добро пожаловать!</h2>
+                    <p>
+                        Здесь можно управлять процессом турнира
+                    </p>
+                </div>
+
+                <div class="info-grid">
+
+                    <div class="info-card">
+                        <small>Место проведения</small>
+                        <h3>{{ t.location }}</h3>
+                    </div>
+
+                    <div class="info-card">
+                        <small>Дата начала</small>
+                        <h3>{{ t.start_date }}</h3>
+                    </div>
+
+                    <div class="info-card">
+                        <small>Дата окончания</small>
+                        <h3>{{ t.end_date }}</h3>
+                    </div>
+
+                    <div class="info-card">
+                        <small>База данных</small>
+                        <h3>
+                            {{ t.database_status === 'ready'
+                                ? 'Подключена' 
+                                : 'Не готова' }}
+                        </h3>
+                    </div>
+
+                </div>
+
+                @if (t.description) {
+                    <div class="description">
+                        <h3>Описание турнира</h3>
+                        <p>{{ t.description }}</p>
+                    </div>
+                }
+
+                <div class="next-step">
+                    <h3>Следующий шаг</h3>
+                    <p>
+                        Начните с регистрации спортсменов.
+                    </p>
+                </div>
+
+            </section>
+
+            <router-outlet></router-outlet>
+
+        </main>
+
+    </div> 
+}

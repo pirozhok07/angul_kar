@@ -1,0 +1,195 @@
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+    background: #f4f6fa;
+    font-family: Arial, sans-serif;
+  }
+  
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: #17243a;
+    color: white;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+  
+    strong, small {
+      display: block;
+    }
+  
+    small {
+      color: #aab5c6;
+      margin-top: 4px;
+    }
+  }
+  
+  .brand-icon {
+    font-size: 30px;
+  }
+  
+  .tournament-info {
+    margin: 35px 0 25px;
+    padding: 16px;
+    background: #263650;
+    border-radius: 10px;
+  
+    small {
+      color: #aab5c6;
+    }
+  
+    h3 {
+      font-size: 16px;
+      margin: 12px 0;
+    }
+  }
+  
+  .status {
+    color: #5de0a0;
+    font-size: 12px;
+  }
+  
+  .navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  
+    a {
+      padding: 13px;
+      color: #d5dce7;
+      text-decoration: none;
+      border-radius: 8px;
+      display: flex;
+      gap: 12px;
+  
+      &:hover {
+        background: #263650;
+      }
+  
+      &.active {
+        background: #1769aa;
+        color: white;
+      }
+    }
+  }
+  
+  .back-link {
+    margin-top: auto;
+    padding: 18px 10px 8px;
+    color: #aab5c6;
+    text-decoration: none;
+  }
+  
+  .main-content {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .topbar {
+    background: white;
+    padding: 25px 35px;
+    border-bottom: 1px solid #e5e9f0;
+  
+    h1 {
+      color: #17243a;
+      margin: 0 0 8px;
+    }
+  
+    p {
+      color: #778196;
+      margin: 0;
+    }
+  }
+  
+  .content {
+    padding: 35px;
+  }
+  
+  .welcome {
+    margin-bottom: 30px;
+  
+    h2 {
+      color: #17243a;
+    }
+  
+    p {
+      color: #778196;
+    }
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(180px, 1fr)
+    );
+    gap: 18px;
+  }
+  
+  .info-card,
+  .description,
+  .next-step {
+    background: white;
+    padding: 22px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #00000008;
+  }
+  
+  .info-card {
+    small {
+      color: #778196;
+    }
+  
+    h3 {
+      color: #1769aa;
+      font-size: 17px;
+      overflow-wrap: anywhere;
+    }
+  }
+  
+  .description,
+  .next-step {
+    margin-top: 22px;
+    color: #647084;
+  }
+  
+  .loading,
+  .error {
+    padding: 40px;
+    color: #17243a;
+  }
+  
+  .error a {
+    display: block;
+    margin-top: 15px;
+  }
+  
+  @media (max-width: 750px) {
+    .dashboard {
+      flex-direction: column;
+    }
+  
+    .sidebar {
+      width: auto;
+    }
+  
+    .navigation {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+    }
+  
+    .content {
+      padding: 20px;
+    }
+  
+    .topbar {
+      padding: 20px;
+    }
+  }

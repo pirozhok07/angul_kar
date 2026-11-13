@@ -1,0 +1,128 @@
+<div class="page">
+
+    <header class="header">
+        <div>
+            <h1> Karate Tournament Manager</h1>
+            <p> Управление соревнованиями по карате</p>
+        </div>
+
+        <button class="primary-btn" (click)="openForm()">
+            + Создать турнир
+        </button>
+    </header>
+
+    @if (error()) {
+        <div class="error">
+            {{ error() }}
+        </div>
+    }
+    
+    @if (loading()) {
+        <p> Загрузка турниров...</p>
+    } @else {
+        <section class="tournament-section">
+            <h2> Турниры </h2>
+
+            @if (tournaments().length === 0) {
+                <div class="empty">
+                    <h3>Пока нет турниров</h3>
+                    <p>Создайте турнир!</p>
+                </div>
+            }
+            
+            <div class="tournament-grid">
+                @for (tournament of tournaments(); track tournament.id) {
+                    <article class="tournament-card">
+
+                        <h3>{{ tournament.name }}</h3>
+                        <p>📍 {{ tournament.location }}</p>
+                        <p>📅 {{ tournament.start_date }} - {{ tournament.end_date }} </p>
+
+                        @if (tournament.description) {
+                            <p>{{ tournament.description }}</p>
+                        }
+                        
+                        <a  
+                            class="open-tournament"
+                            [routerLink]="['/tournaments', tournament.id]">
+                            Открыть турнир - 
+                        </a>
+
+                        <div class="card-actions">
+                            <button
+                              type="button"
+                              class="edit-btn"
+                              (click)="editTournament(tournament)">
+                              Редактировать
+                            </button>
+                            <button
+                              type="button"
+                              class="delete-btn"
+                              (click)="deleteTournament(tournament)">
+                              Удалить
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+
+    @if (showForm()) {
+        <div class="modal-backdop">
+            <div class="modal">
+                <h2>
+                    {{ editingId() !== null ? 'Редактировать турнир' : 'Новый турнир' }}
+                </h2>
+                <form
+                  [formGroup]="tournamentForm"
+                  (ngSubmit)="saveTournament()">
+
+                  <label>Название турнира</label>
+                  <input
+                    type="text"
+                    formControlName="name"
+                    placeholder="Moscow Open">
+
+                  <label>Место проведения</label>
+                  <input
+                    type="text"
+                    formControlName="location"
+                    placeholder="Moscow">
+
+                  <label>Дата начала</label>
+                  <input
+                    type="date"
+                    formControlName="start_date">
+
+                  <label>Дата окончания</label>
+                  <input
+                    type="date"
+                    formControlName="end_date">
+
+                  <label>Описание</label>
+                  <textarea
+                    formControlName="description"
+                    placeholder="Описание турнира...">
+                  </textarea>
+
+                  <div class="modal-actions">
+                    <button
+                      type="button"
+                      class="secondary-btn"
+                      (click)="closeForm()">
+                      Отмена
+                    </button>
+                    <button type="submit" class="primary-btn">
+                        {{ editingId() !== null ? 'Обновить' : 'Соxранить' }}
+                    </button>
+
+                  </div>
+
+                </form>
+
+            </div>
+        </div>    
+    }
+
+</div>

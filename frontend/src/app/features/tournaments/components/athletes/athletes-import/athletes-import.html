@@ -1,0 +1,118 @@
+<section class="import-page">
+    <header class="page-header">
+      <div>
+        <h1>Импорт спортсменов</h1>
+        <p>Загрузка списка участников из Excel</p>
+      </div>
+  
+      <button class="secondary-button" (click)="downloadTemplate()">
+        Скачать Excel-шаблон
+      </button>
+    </header>
+  
+    <section class="upload-card">
+      <h2>1. Выберите файл</h2>
+  
+      <p>
+        Поддерживается формат .xlsx. Максимальный размер файла — 10 МБ.
+      </p>
+  
+      <input
+        type="file"
+        accept=".xlsx"
+        (change)="selectFile($event)"
+      />
+  
+      @if (file()) {
+        <p class="selected-file">
+          Выбран файл: <strong>{{ file()?.name }}</strong>
+        </p>
+      }
+  
+      <button
+        class="primary-button"
+        [disabled]="!file() || loading()"
+        (click)="previewImport()"
+      >
+        {{ loading() ? 'Проверка...' : 'Проверить файл' }}
+      </button>
+    </section>
+  
+    @if (error()) {
+      <div class="error-message">{{ error() }}</div>
+    }
+  
+    @if (success()) {
+      <div class="success-message">{{ success() }}</div>
+    }
+  
+    @if (preview(); as result) {
+      <section class="preview-card">
+        <h2>2. Результат проверки</h2>
+  
+        <div class="statistics">
+          <div>
+            <strong>{{ result.total }}</strong>
+            <span>Всего строк</span>
+          </div>
+  
+          <div>
+            <strong>{{ result.valid }}</strong>
+            <span>Готово к импорту</span>
+          </div>
+  
+          <div>
+            <strong>{{ result.invalid }}</strong>
+            <span>Ошибки</span>
+          </div>
+        </div>
+  
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Строка Excel</th>
+                <th>ФИО</th>
+                <th>Результат</th>
+              </tr>
+            </thead>
+  
+            <tbody>
+              @for (row of result.rows; track row.row) {
+                <tr>
+                  <td>{{ row.row }}</td>
+                  <td>{{ row.full_name || '—' }}</td>
+                  <td>
+                    @if (row.valid) {
+                      <span class="valid">Готово</span>
+                    } @else {
+                      <div class="invalid">
+                        @for (message of row.errors; track message) {
+                          <div>{{ message }}</div>
+                        }
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+  
+        @if (result.invalid > 0) {
+          <p class="warning">
+            Исправьте ошибки в Excel и загрузите файл повторно.
+            Импорт пока недоступен.
+          </p>
+        }
+  
+        <button
+          class="primary-button"
+          [disabled]="result.invalid > 0 || result.valid === 0 || loading()"
+          (click)="confirmImport()"
+        >
+          Подтвердить импорт
+        </button>
+      </section>
+    }
+  </section>
