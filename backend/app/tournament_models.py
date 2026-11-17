@@ -15,6 +15,7 @@ class Athlete(TournamentBase):
     second_name: Mapped[str] = mapped_column(String(100), nullable=True)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     birth_date: Mapped[date] = mapped_column(Date, nullable=False)
+    age: Mapped[int] = mapped_column(Integer, nullable=False)
     gender: Mapped[str] = mapped_column(String(7), nullable=False)
     weight: Mapped[Decimal | None] = mapped_column(Numeric(5,2), nullable=True)
     weight_fact: Mapped[Decimal | None] = mapped_column(Numeric(5,2), nullable=True)
@@ -46,7 +47,7 @@ class Category(TournamentBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     discipline: Mapped[str] = mapped_column(String(100), nullable=False)
-    gender: Mapped[str] = mapped_column(String(7), nullable=False)
+    gender: Mapped[str] = mapped_column(String(7), nullable=True)
     age_min: Mapped[int] = mapped_column(Integer, nullable=False)
     age_max: Mapped[int] = mapped_column(Integer, nullable=False)
     weight_min: Mapped[Decimal | None] = mapped_column(Numeric(5,2), nullable=True)
@@ -54,7 +55,7 @@ class Category(TournamentBase):
 
     __table_args__ = (
         CheckConstraint(
-            "discipline IN ('kata', 'kumite')",
+            "discipline IN ('kata', 'kumite', 'kata-group')",
             name="check_category_discipline"
         ),
         CheckConstraint(
@@ -125,4 +126,112 @@ class Coach(TournamentBase):
             "club_id",
             name="uq_coach_club"
         ),
+    )
+
+class KataGroup(TournamentBase):
+    __tablename__ = "kata_groups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+
+    category_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("categories.id", ondelete="CASCADE"), 
+        nullable=False,
+        index=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "category_id",
+            name="uq_kata_group_category"
+        ),
+    )
+    
+class KataGroupAthlete(TournamentBase):
+    __tablename__ = "kata_group_athletes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    kata_group_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("kata_groups.id", ondelete="CASCADE"), 
+        nullable=False,
+        index=True
+    )
+
+    athlete_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        nullable=False,
+        index=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "kata_group_id",
+            "athlete_id",
+            name="uq_kata_group_athlete"
+        ),
+    )
+
+class CategoryDistribution(TournamentBase):
+    __tablename__ = "category_distributions"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    draw_order: Mapped[int] = mapped_column(Integer, nullable=True)
+    
+    category_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("categories.id", ondelete="CASCADE"), 
+        nullable=False,
+        index=True
+    )
+
+    athlete_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        nullable=True,
+        index=True
+    )
+
+    kata_group_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("kata_groups.id", ondelete="CASCADE"), 
+        nullable=True,
+        index=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "category_id",
+            "athlete_id",
+            name="uq_category_distributions_athlete"
+        ),
+        UniqueConstraint(
+            "category_id",
+            "kata_group_id",
+            name="uq_category_distributions_kata_group"
+        ),
+        CheckConstraint(
+            """
+            (athlete_id IS NOT NULL AND kata_group_id IS NULL)
+            OR
+            (athlete_id IS NULL AND kata_group_id IS NOT NULL)
+            """,
+            name="ck_category_distribution_one_participant"
+        )
+    )
+
+class Undistribution(TournamentBase):
+    __tablename__ = "undistributions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    reason: Mapped[str] = mapped_column(String(300), nullable=False)
+    athlete_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        nullable=False,
+        index=True
     )

@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TournamentList } from './tournament-list';
+import { CategoryAthletes } from './category-athletes';
 
-describe('TournamentList', () => {
-  let component: TournamentList;
-  let fixture: ComponentFixture<TournamentList>;
+describe('CategoryAthletes', () => {
+  let component: CategoryAthletes;
+  let fixture: ComponentFixture<CategoryAthletes>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TournamentList],
+      imports: [CategoryAthletes],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TournamentList);
+    fixture = TestBed.createComponent(CategoryAthletes);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

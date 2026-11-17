@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -5,6 +6,7 @@ from sqlalchemy import select, func, inspect
 
 from app.tournament_database import get_tournament_db
 from app.tournament_models import Athlete
+from app.models import Tournament
 
 router = APIRouter(
     prefix="/api/tournaments/{tournament_id}/athletes",
@@ -32,6 +34,23 @@ def validate_athlete_data(data: dict[str, any]) -> dict[str, Any]:
             detail=f"Неизвестное поле: {', '.join(sorted(unknown))}"
         )
     return allowed
+
+def get_tournament_date(main_db: Session, tournament_id: int) -> date:
+    tournament = main_db.get(Tournament, tournament_id)
+    if not tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tournament not found"
+        )
+    return tournament.start_date
+
+def calculate_age(birth_date: date, tournament_date: date) -> int:
+    control_date = tournament_date - timedelta(days=1)
+    
+    return control_date.year-birth_date.year - (
+        (control_date.month,control_date.day) < (birth_date.month, birth_date.day)
+    )
+    
 
 @router.get("/fields")
 def get_athlete_fields(db: Session = Depends(get_tournament_db)):
@@ -73,9 +92,14 @@ def get_athlete(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_athlete(
     data: dict[str, Any],
+    tournament_id: int,
     db: Session = Depends(get_tournament_db)
 ):
-    db_athlete = Athlete(**validate_athlete_data(data), registration_status="pending")
+    db_athlete = Athlete(
+        **validate_athlete_data(data),
+        age = calculate_age(data['birth_date'], get_tournament_date(tournament_id)),
+        registration_status="pending"
+    )
 
     db.add(db_athlete)
     db.commit()
@@ -86,6 +110,7 @@ def create_athlete(
 @router.put("/{athlete_id}")
 def update_athlete(
     athlete_id: int,
+    tournament_id: int,
     data: dict[str, Any],
     db: Session = Depends(get_tournament_db)
 ):
@@ -98,6 +123,8 @@ def update_athlete(
         )
     
     athlete_data = validate_athlete_data(data)
+    if data.get('birth_date') is not None:
+        data['age'] = calculate_age(data['birth_date'], get_tournament_date(tournament_id))
     for key, value in athlete_data.items():
         setattr(db_athlete, key, value)
 

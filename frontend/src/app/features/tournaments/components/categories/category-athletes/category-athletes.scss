@@ -1,0 +1,66 @@
+.page {
+    padding: 20px;
+  }
+  
+  .page-header {
+    margin-bottom: 24px;
+  
+    h2 {
+      margin: 12px 0 6px;
+      font-size: 24px;
+    }
+  
+    p {
+      color: #777;
+      margin: 0;
+    }
+  }
+  
+  .back-link {
+    color: #2563eb;
+    text-decoration: none;
+  
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+  
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+  
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+    }
+  
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+  }
+  
+  .loading,
+  .empty {
+    padding: 24px;
+    text-align: center;
+    color: #777;
+  }
+  
+  .alert-error {
+    padding: 12px;
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: 6px;
+  }

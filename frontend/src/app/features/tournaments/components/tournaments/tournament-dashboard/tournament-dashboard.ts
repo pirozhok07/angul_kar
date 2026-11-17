@@ -5,9 +5,11 @@ import {
   signal
 } from '@angular/core';
 
-import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'; 
-import { TournamentService } from '../../../../core/services/tournament.service';
-import { Tournament } from '../../models/tournament.model';
+import { filter } from 'rxjs';
+
+import { ActivatedRoute, NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router'; 
+import { TournamentService } from '../../../../../core/services/tournament.service';
+import { Tournament } from '../../../models/tournament.model';
 
 @Component({
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
@@ -19,11 +21,26 @@ import { Tournament } from '../../models/tournament.model';
 export class TournamentDashboard implements OnInit {
 
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly tournamentService = inject(TournamentService);
+
 
   tournament = signal<Tournament | null>(null);
   loading = signal(true);
   error = signal('');
+
+  isOverview = signal(true);
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd)
+      )
+      .subscribe(() => {
+        const childRoute = this.route.firstChild;
+        this.isOverview.set(!childRoute);
+      });
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
@@ -59,4 +76,5 @@ export class TournamentDashboard implements OnInit {
     })
 
   }
+
 }

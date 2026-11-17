@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 
-import { TournamentList } from './features/tournaments/components/tournament-list/tournament-list';
-import { TournamentDashboard } from './features/tournaments/components/tournament-dashboard/tournament-dashboard';
+import { TournamentMain } from './features/tournaments/components/tournaments/tournament-main/tournament-main';
+import { TournamentDashboard } from './features/tournaments/components/tournaments/tournament-dashboard/tournament-dashboard';
 import { ATHLETES_ROUTES } from './features/tournaments/components/athletes/athletes.routes';
 import { CATEGORIES_ROUTES } from './features/tournaments/components/categories/categories.routes';
 import { CLUBS_ROUTES } from './features/tournaments/components/clubs/clubs.routes';
 import { COACHES_ROUTES } from './features/tournaments/components/coaches/coaches.routes';
+import { KATA_GROUPS_ROUTES } from './features/tournaments/components/kata-groups/kata-groups.routes';
 
 export const routes: Routes = [
     {
@@ -16,7 +17,7 @@ export const routes: Routes = [
 
     {
         path: 'tournaments',
-        component: TournamentList
+        component: TournamentMain
     },
     
     {
@@ -38,7 +39,11 @@ export const routes: Routes = [
             {
                 path: 'coaches',
                 children: COACHES_ROUTES
-            }
+            },
+            {
+                path: 'kata-groups',
+                children: KATA_GROUPS_ROUTES
+            },
         ]
     },
     

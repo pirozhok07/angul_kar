@@ -59,6 +59,10 @@
     th { background: #f9fafb; }
   }
 
+  a {
+    text-decoration:none;
+  }
+
   .actions {
     min-width: 190px;
   }
@@ -124,6 +128,13 @@
     border-bottom: 1px solid #e5e7eb;
   }
   
+  .clickable-row {
+    cursor: pointer;
+    
+    &:hover {
+      background: #eff6ff;
+    }
+  }
   .muted { color: #9ca3af; }
   .error { color: #991b1b; margin-bottom: 16px; }
   

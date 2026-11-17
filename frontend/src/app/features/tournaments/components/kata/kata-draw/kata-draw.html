@@ -1,0 +1,115 @@
+<div class="page">
+
+    <div class="page-header">
+      <div>
+        <a routerLink="../../categories" class="back-link">
+          ← К категориям
+        </a>
+  
+        <h2>Жеребьёвка — ката</h2>
+  
+        <p>{{ category()?.name || 'Категория' }}</p>
+      </div>
+  
+      <div class="header-actions">
+        <button
+          class="btn btn-secondary"
+          (click)="load()"
+          [disabled]="loading()">
+          Обновить
+        </button>
+  
+        <button
+          class="btn btn-primary"
+          (click)="generate()"
+          [disabled]="loading() || generating() || !participants().length">
+          {{ generating() ? 'Формирование...' : 'Сформировать жеребьёвку' }}
+        </button>
+  
+        <button
+          class="btn btn-success"
+          (click)="save()"
+          [disabled]="loading() || saving() || !participants().length">
+          {{ saving() ? 'Сохранение...' : 'Сохранить порядок' }}
+        </button>
+      </div>
+    </div>
+  
+    @if (error()) {
+      <div class="alert alert-error">{{ error() }}</div>
+    }
+  
+    @if (success()) {
+      <div class="alert alert-success">{{ success() }}</div>
+    }
+  
+    @if (loading()) {
+      <div class="loading">Загрузка участников...</div>
+    } @else {
+  
+      <div class="draw-info">
+        <span>Участников: <strong>{{ participants().length }}</strong></span>
+        <span>Порядок можно изменить кнопками ↑ и ↓</span>
+      </div>
+  
+      @if (participants().length) {
+        <div class="draw-list">
+  
+          @for (participant of participants(); track participant.key; let i = $index) {
+            <div class="draw-item">
+  
+              <div class="draw-position">
+                {{ i + 1 }}
+              </div>
+  
+              <div class="participant-info">
+                <strong>{{ participant.name }}</strong>
+  
+                @if (participant.kata_group_id) {
+                  <span class="participant-type">Ката-группа</span>
+  
+                  @for (athlete of participant.athletes ?? []; track athlete.id) {
+                    <span class="member-name">{{ athlete.name }}</span>
+                  }
+                } @else {
+                  <span class="participant-type">Спортсмен</span>
+                }
+  
+                <div class="clubs">
+                  Клубы:
+                  @for (club of participant.clubs ?? []; track club.club_id ?? club.club_name) {
+                    <span>{{ club.club_name }}</span>
+                  }
+                </div>
+              </div>
+  
+              <div class="move-buttons">
+                <button
+                  type="button"
+                  title="Переместить выше"
+                  (click)="move(i, -1)"
+                  [disabled]="i === 0">
+                  ↑
+                </button>
+  
+                <button
+                  type="button"
+                  title="Переместить ниже"
+                  (click)="move(i, 1)"
+                  [disabled]="i === participants().length - 1">
+                  ↓
+                </button>
+              </div>
+  
+            </div>
+          }
+  
+        </div>
+      } @else {
+        <div class="empty">
+          В этой категории пока нет участников.
+        </div>
+      }
+    }
+  
+  </div>

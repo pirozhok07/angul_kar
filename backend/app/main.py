@@ -2,7 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routes import tournaments, athletes, categories, athlete_import, clubs, coaches
+from app.routes import (
+    tournaments, 
+    athletes, 
+    categories, 
+    athlete_import, 
+    clubs, 
+    coaches,
+    kata_groups,
+    kara_draw
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -34,6 +43,8 @@ app.include_router(categories.router)
 app.include_router(athlete_import.router)
 app.include_router(clubs.router)
 app.include_router(coaches.router)
+app.include_router(kata_groups.router)
+app.include_router(kara_draw.router)
 
 @app.get("/")
 def root():

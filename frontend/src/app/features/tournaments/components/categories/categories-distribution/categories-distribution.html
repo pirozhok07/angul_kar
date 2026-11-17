@@ -1,0 +1,254 @@
+<div class="page">
+
+    <div class="page-header">
+      <div>
+        <h2>Распределение спортсменов</h2>
+        <p>Предварительный просмотр и распределение по категориям</p>
+      </div>
+  
+      <div class="header-actions">
+        <button
+          class="btn btn-secondary"
+          type="button"
+          (click)="load()"
+          [disabled]="loading() || distributing()">
+          Обновить
+        </button>
+  
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="distribute()"
+          [disabled]="loading() || distributing()">
+          {{ distributing() ? 'Распределение...' : 'Распределить спортсменов' }}
+        </button>
+      </div>
+    </div>
+  
+    @if (error()) {
+      <div class="alert alert-error">
+        {{ error() }}
+      </div>
+    }
+  
+    @if (success()) {
+      <div class="alert alert-success">
+        {{ success() }}
+      </div>
+    }
+  
+    @if (loading()) {
+      <div class="loading">Загрузка данных...</div>
+    } @else {
+  
+      @if (preview()) {
+        <section class="panel">
+          <h3>Предварительный просмотр</h3>
+  
+          <div class="date-info">
+            <div>
+              <span>Дата турнира</span>
+              <strong>{{ preview().tournament_date || '—' }}</strong>
+            </div>
+  
+            <div>
+              <span>Дата расчёта возраста</span>
+              <strong>{{ preview().age_reference_date || '—' }}</strong>
+            </div>
+          </div>
+  
+          <h4>Индивидуальные категории</h4>
+  
+          @if (getPreviewAthletes().length) {
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Спортсмен</th>
+                    <th>Возраст</th>
+                    <th>Пол</th>
+                    <th>Вес</th>
+                    <th>Категории</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+  
+                <tbody>
+                  @for (athlete of getPreviewAthletes(); track athlete.athlete_id) {
+                    <tr>
+                      <td>{{ athlete.athlete_name }}</td>
+                      <td>{{ athlete.age ?? '—' }}</td>
+                      <td>{{ athlete.gender ?? '—' }}</td>
+                      <td>{{ athlete.weight ?? '—' }}</td>
+  
+                      <td>
+                        @if (athlete.suggestions) {
+                          @for (suggestion of athlete.suggestions; track suggestion.category_id) {
+                            {{ suggestion.category_name }}.
+                          }
+                        } @else {
+                          <span class="muted">—</span>
+                        }
+                      </td>
+  
+                      <td>
+                        @if (athlete.kumite_category) {
+                          {{ athlete.kumite_category }}
+                        } @else {
+                          <span class="muted">—</span>
+                        }
+                      </td>
+  
+                      <td>
+                        @if (athlete.reason) {
+                          <span class="status status-error">
+                            {{ athlete.reason }}
+                          </span>
+                        } @else {
+                          <span class="status status-success">Подходит</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="empty">Нет спортсменов для распределения</p>
+          }
+  
+          <h4>Ката-группы</h4>
+  
+          @if (getPreviewGroups().length) {
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Название группы</th>
+                    <th>Категория</th>
+                    <th>Спортсмены</th>
+                    <th>Количество</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+  
+                <tbody>
+                  @for (group of getPreviewGroups(); track group.group_id) {
+                    <tr>
+                      <td>{{ group.name }}</td>
+                      <td>{{ group.category_name || '—' }}</td>
+                      <td>
+                        @for (athlete of group.athletes ?? []; track athlete.id) {
+                          <div>{{ getAthleteName(athlete) }}</div>
+                        }
+                      </td>
+                      <td>{{ group.athlete_count ?? group.athletes?.length ?? 0 }}</td>
+                      <td>
+                        @if (group.is_complete) {
+                          <span class="status status-success">Готова</span>
+                        } @else {
+                          <span class="status status-error">
+                            {{ group.reason || 'Неполная группа' }}
+                          </span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="empty">Нет ката-групп</p>
+          }
+        </section>
+      }
+  
+      <section class="panel">
+        <h3>Результат распределения</h3>
+  
+        @if (distribution()) {
+          @if (getDistributionCategories().length) {
+            @for (category of getDistributionCategories(); track category.category_id) {
+              <div class="category-block">
+                <h4>
+                  {{ category.category_name || getCategoryName(category.category_id) }}
+                  <span class="count">
+                    {{ category.participants?.length ?? 0 }}
+                  </span>
+                </h4>
+  
+                @if (category.participants?.length) {
+                  <div class="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          @if (category.discipline === "kata-group") {
+                            <th>Группа</th>
+                          } @else {
+                            <th>Спортсмен</th>
+                          }
+                        </tr>
+                      </thead>
+  
+                      <tbody>
+                        @for (participant of category.participants; track participant.id) {
+                          <tr>
+                            <td>
+                              @if (category.discipline === "kata-group") {
+                                {{ participant.name }}
+                              } @else {
+                                {{ getAthleteName(participant) }}
+                              }
+                            </td>
+
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <p class="empty">В категории пока нет участников</p>
+                }
+              </div>
+            }
+          } @else {
+            <p class="empty">Распределение ещё не выполнено</p>
+          }
+  
+          <div class="undistributed">
+            <h4>
+              Не распределены
+              <span class="count">{{ getUndistributed().length }}</span>
+            </h4>
+  
+            @if (getUndistributed().length) {
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Спортсмен</th>
+                      <th>Причина</th>
+                    </tr>
+                  </thead>
+  
+                  <tbody>
+                    @for (item of getUndistributed(); track item.athlete_id) {
+                      <tr>
+                        <td>
+                          {{ getAthleteName(item) }}
+                        </td>
+                        <td>{{ item.reason }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="empty">Все спортсмены распределены</p>
+            }
+          </div>
+        }
+      </section>
+    }
+  
+  </div>

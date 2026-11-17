@@ -12,21 +12,21 @@ import {
 } from '@angular/forms';
 
 import { RouterLink } from '@angular/router';
-import { TournamentService } from '../../../../core/services/tournament.service';
+import { TournamentService } from '../../../../../core/services/tournament.service';
 
 import {
   Tournament,
   TournamentCreate
-} from '../../models/tournament.model';
+} from '../../../models/tournament.model';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
-  selector: 'app-tournament-list',
+  selector: 'app-tournament-main',
   standalone: true,
-  styleUrl: './tournament-list.scss',
-  templateUrl: './tournament-list.html',
+  styleUrl: './tournament-main.scss',
+  templateUrl: './tournament-main.html',
 })
-export class TournamentList implements OnInit {
+export class TournamentMain implements OnInit {
 
   private readonly tournamentService = inject(TournamentService);
   private readonly fb = inject(FormBuilder);
@@ -94,7 +94,7 @@ export class TournamentList implements OnInit {
       this.error.set('Дата окончания раньше дата начала');
       return;
     }
-    console.log(data)
+    
     this.error.set('');
     this.loading.set(true);
 

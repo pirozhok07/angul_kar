@@ -16,7 +16,7 @@ import {
   AthletesService
 } from '../athletes.service';
 
-import { ATHLETE_FIELD_LABELS, HIDDEN_FIELDS } from '../athlete-fields.maps'
+import { ATHLETE_FIELD_LABELS, HIDDEN_FIELDS, HIDDEN_FIELDS_FOEM } from '../athlete-fields.maps'
 import { Coach } from '../../coaches/coaches.service';
 import { Club } from '../../clubs/clubs.service';
 
@@ -37,6 +37,9 @@ export class AthletesList implements OnInit {
   labelFields = ATHLETE_FIELD_LABELS;
   visibleFields = computed(() => {
     return this.fields().filter(field => ! HIDDEN_FIELDS.includes(field.name))
+  });
+  visibleFieldsForms = computed(() => {
+    return this.fields().filter(field => ! HIDDEN_FIELDS_FOEM.includes(field.name))
   });
   loading = signal(true);
   error = signal('');

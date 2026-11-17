@@ -1,0 +1,268 @@
+.kata-groups-page {
+    padding: 20px;
+  }
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  
+    h1 {
+      margin: 0 0 6px;
+    }
+  
+    p {
+      margin: 0;
+      color: #777;
+    }
+  }
+  
+  .primary,
+  .primary-button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 16px;
+    cursor: pointer;
+  
+    &:hover {
+      background: #125ca1;
+    }
+  
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+  
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+  
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+  
+    tbody tr:hover {
+      background: #f9f9f9;
+    }
+  }
+
+  .actions {
+    min-width: 190px;
+  }
+  
+  button {
+    border: 0;
+    border-radius: 7px;
+    padding: 9px 14px;
+    cursor: pointer;
+    background: #e5e7eb;
+  }
+  
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .primary-button {
+    color: white;
+    background: #2563eb;
+  }
+  
+  .delete-button {
+    color: #b91c1c;
+    background: #fee2e2;
+    margin-left: 6px;
+  }
+  
+  .error {
+    padding: 12px;
+    margin-bottom: 16px;
+    color: #c62828;
+    background: #ffebee;
+    border-radius: 5px;
+  }
+  
+  .empty-message {
+    padding: 20px;
+    text-align: center;
+    color: #777;
+  }
+  
+  /* Модальное окно */
+  
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+  }
+  
+  .modal {
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+  
+    h2 {
+      margin: 0 0 24px;
+    }
+  
+    h3 {
+      margin: 0 0 12px;
+    }
+  }
+  
+  .form-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+  
+    label span {
+      font-weight: 500;
+    }
+  
+    input,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+  }
+  
+  /* Состав группы */
+  
+  .athletes-section {
+    margin-top: 24px;
+  }
+  
+  .selected-count {
+    margin: 8px 0 12px;
+    color: #555;
+  }
+  
+  .athlete-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+  
+    input,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  }
+  
+  .athletes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+  }
+  
+  .athlete-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+  
+    small {
+      display: block;
+      color: #777;
+      margin-top: 3px;
+    }
+  
+    &.selected {
+      background: #e8f3ff;
+      border: 1px solid #90caf9;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .athlete-filters {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Кнопки модального окна */
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+  
+    button {
+      padding: 9px 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background: white;
+    }
+  
+    .primary-button {
+      border: none;
+      background: #1976d2;
+      color: white;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .page-header {
+      align-items: flex-start;
+      gap: 15px;
+      flex-direction: column;
+    }
+  
+    .form-fields {
+      grid-template-columns: 1fr;
+    }
+  
+    .modal {
+      padding: 18px;
+    }
+  }

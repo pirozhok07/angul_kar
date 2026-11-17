@@ -1,17 +1,19 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 import re
 import unicodedata
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook, load_workbook
 from sqlalchemy import func, inspect
 from sqlalchemy.orm import Session
 
 from app.tournament_database import get_tournament_db
+from app.tournament_database import get_db
 from app.tournament_models import Athlete, Club, Coach
+from app.models import Tournament
 
 
 router = APIRouter(
@@ -70,6 +72,21 @@ def normalize_gender(value):
 
     return aliases.get(value)
 
+def get_tournament_date(main_db: Session, tournament_id: int) -> date:
+    tournament = main_db.get(Tournament, tournament_id)
+    if not tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tournament not found"
+        )
+    return tournament.start_date
+
+def calculate_age(birth_date: date, tournament_date: date) -> int:
+    control_date = tournament_date - timedelta(days=1)
+    
+    return control_date.year-birth_date.year - (
+        (control_date.month,control_date.day) < (birth_date.month, birth_date.day)
+    )
 
 def parse_birth_date(value):
     if isinstance(value, datetime):
@@ -170,7 +187,7 @@ def resolve_name_fields(full_name):
     }
 
 
-def map_row(db: Session, row, columns):
+def map_row(db: Session, row, columns, tournament_date):
     data = {}
     errors = []
 
@@ -212,8 +229,11 @@ def map_row(db: Session, row, columns):
             data[birth_field] = parse_birth_date(
                 row.get("Дата рождения")
             )
+            data['age'] = calculate_age(data['birth_date'], tournament_date)
         except ValueError as exc:
             errors.append(str(exc))
+    
+    
 
     gender_field = next(
         (name for name in ALIASES["Пол"] if name in columns),
@@ -436,8 +456,10 @@ def download_template():
 
 @router.post("/preview")
 async def preview_import(
+    tournament_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_tournament_db),
+    main_db: Session = Depends(get_db),
 ):
     content = await read_upload(file)
     excel_rows = read_excel(content)
@@ -458,8 +480,10 @@ async def preview_import(
     seen_in_file = set()
     result = []
 
+    tournament_date = get_tournament_date(main_db, tournament_id)
+
     for row_number, row in excel_rows:
-        data, errors = map_row(db, row, columns)
+        data, errors = map_row(db, row, columns, tournament_date)
 
         if not errors:
             key = duplicate_identity(data, columns)
@@ -493,8 +517,10 @@ async def preview_import(
 
 @router.post("/confirm")
 async def confirm_import(
+    tournament_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_tournament_db),
+    main_db = Depends(get_db)
 ):
     content = await read_upload(file)
     excel_rows = read_excel(content)
@@ -512,8 +538,10 @@ async def confirm_import(
     prepared = []
     errors = []
 
+    tournament_date = get_tournament_date(main_db, tournament_id)
+
     for row_number, row in excel_rows:
-        data, row_errors = map_row(db, row, columns)
+        data, row_errors = map_row(db, row, columns, tournament_date)
 
         if not row_errors:
             key = duplicate_identity(data, columns)

@@ -1,0 +1,64 @@
+<div class="page">
+    <div class="page-header">
+      <div>
+        <a routerLink="../" class="back-link">← Все категории</a><br>
+        <a [routerLink]="['/tournaments', tournamentId, 'categories', 'kata-draw', categoryId]" class="draw-link">Жеребьевка</a>
+        <h2>{{ category()?.category_name || 'Спортсмены категории' }}</h2>
+        <p>Количество спортсменов: {{ participants().length }}</p>
+      </div>
+    </div>
+  
+    @if (loading()) {
+      <div class="loading">Загрузка...</div>
+    } @else if (error()) {
+      <div class="alert-error">{{ error() }}</div>
+    } @else if (participants().length) {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>№</th>
+              <th>Фамилия и имя</th>
+              <th>Возраст</th>
+              <th>Пол</th>
+              @if (category().discipline === "kumite") {<th>Вес</th>}
+              <th>Клуб</th>
+            </tr>
+          </thead>
+  
+          <tbody>
+            @if (category().discipline === "kata-group") {
+                @for (participant of participants(); track participant.id; let pIndex = $index) {
+                    @for (athlete of participant.athletes; track athlete.id; let aIndex = $index) {
+                        <tr>
+                            @if (aIndex === 0) {
+                                <td [attr.rowspan]="3">{{ pIndex + 1 }}</td>
+                            } 
+                            <td>{{ getAthleteName(athlete)  }}</td>
+                            <td>{{ athlete.age ?? '—' }}</td>
+                            <td>{{ athlete.gender ?? '—' }}</td>
+                            <td>{{ athlete.club ?? '—' }}</td>
+                        </tr>
+                    }
+                }
+            } @else {
+                @for (athlete of participants(); track athlete.id; let i = $index) {
+                <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ getAthleteName(athlete) }}</td>
+                    <td>{{ athlete.age ?? '—' }}</td>
+                    <td>{{ athlete.gender ?? '—' }}</td>
+                    @if (category().discipline === "kumite") {<td>{{ athlete.weight ?? '—' }}</td>}
+                    <td>{{ athlete.club ?? '—' }}</td>
+                </tr>
+                }
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="empty">
+        В этой категории пока нет спортсменов.
+      </div>
+    }
+  </div>

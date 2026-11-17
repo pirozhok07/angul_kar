@@ -6,6 +6,10 @@
       </div>
   
       <div class="header-actions">
+        <a routerLink="distribution" routerLinkActive="active">
+          <span>*</span> Распределение спортсменов
+        </a>
+
         <button (click)="showPreview()">Распределить атлетов</button>
         <button class="primary" (click)="openCreate()">+ Категория</button>
       </div>
@@ -33,16 +37,20 @@
   
           <tbody>
             @for (category of categories(); track category['id']) {
-              <tr>
-                @for (field of visibleFields(); track field.name) {
-                  <td>{{ category[field.name] ?? '—' }}</td>
-                }
-                <td class="actions">
-                  <button (click)="openEdit(category)">Изменить</button>
-                  <button class="delete-button" (click)="remove(category)">
-                    Удалить
-                  </button>
-                </td>
+              <tr
+                class="clickable-row"
+                (click)="openCategory(category['id'])">
+                  @for (field of visibleFields(); track field.name) {
+                    <td>
+                        {{ category[field.name] ?? '—' }}
+                    </td>
+                  }
+                  <td class="actions">
+                    <button (click)="openEdit(category)">Изменить</button>
+                    <button class="delete-button" (click)="remove(category)">
+                      Удалить
+                    </button>
+                  </td>
               </tr>
             } @empty {
               <tr>
@@ -68,18 +76,22 @@
             Дисциплина
             <select [(ngModel)]="form['discipline']">
               <option value="kata">Ката</option>
+              <option value="kata-group">Ката-группа</option>
               <option value="kumite">Кумите</option>
             </select>
           </label>
   
-          <label>
-            Пол
-            <select [(ngModel)]="form['gender']">
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-            </select>
-          </label>
-  
+          
+          @if (form['discipline'] === 'kumite' || form['discipline'] === 'kata') {
+            <label>
+              Пол
+              <select [(ngModel)]="form['gender']">
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+              </select>
+            </label>
+          }
+
           <div class="form-row">
             <label>
               Возраст от
@@ -91,7 +103,7 @@
               <input type="number" [(ngModel)]="form['age_max']" />
             </label>
           </div>
-  
+
           @if (form['discipline'] === 'kumite') {
             <div class="form-row">
               <label>

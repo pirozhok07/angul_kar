@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { Athlete } from '../athletes/athletes.service';
 
 
 export interface Category {
@@ -34,6 +35,10 @@ export class CategoriesService {
     return this.http.get<Category[]>(`${this.url(tournamentId)}/`);
   }
 
+  getCategoryAthletes(tournamentId: number, categorytId: number): Observable<any> {
+    return this.http.get<any>(`${this.url(tournamentId)}/${categorytId}/athletes`);
+  }
+
   create(tournamentId: number, data: Partial<Category>): Observable<Category> {
     return this.http.post<Category>(`${this.url(tournamentId)}/`, data);
   }
@@ -58,6 +63,18 @@ export class CategoriesService {
   preview(tournamentId: number): Observable<any> {    
     return this.http.get<any>(
       `${this.url(tournamentId)}/distribution-preview`
+    );
+  }
+  
+  distribute(tournamentId: number): Observable<any> {    
+    return this.http.post<any>(
+      `${this.url(tournamentId)}/distribute`, {}
+    );
+  }
+
+  getDistribution(tournamentId: number): Observable<any> {    
+    return this.http.get<any>(
+      `${this.url(tournamentId)}/distribution`
     );
   }
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import {
   Category,
   CategoryField,
@@ -13,12 +13,13 @@ import { CATEGORIES_FIELD_LABELS, HIDDEN_FIELDS } from '../categories-fields.map
 @Component({
   selector: 'app-categories-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './categories-list.html',
   styleUrl: './categories-list.scss'
 })
 export class CategoriesList implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly service = inject(CategoriesService);
 
   tournamentId = 0;
@@ -60,7 +61,7 @@ export class CategoriesList implements OnInit {
       discipline: 'kata',
       age_min: 6,
       age_max: 7,
-      gender: 'male',
+      gender: null,
       weight_min: null,
       weight_max: null
     };
@@ -181,5 +182,9 @@ export class CategoriesList implements OnInit {
         );
       }
     });
+  }
+
+  openCategory(categoryId: number): void {
+    this.router.navigate([categoryId], { relativeTo: this.route});
   }
 }
