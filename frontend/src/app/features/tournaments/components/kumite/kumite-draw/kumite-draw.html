@@ -1,0 +1,251 @@
+<div class="page">
+    <div class="page-header">
+      <div>
+        <h2>Жеребьёвка кумите</h2>
+        @if (category()) {
+          <p class="subtitle">{{ category().name }}</p>
+        }
+      </div>
+  
+      <a
+        class="back-button"
+        [routerLink]="['/tournaments', tournamentId, 'categories', categoryId]"
+      >
+        Назад к категории
+      </a>
+    </div>
+  
+    @if (error()) {
+      <div class="alert error">{{ error() }}</div>
+    }
+  
+    @if (success()) {
+      <div class="alert success">{{ success() }}</div>
+    }
+  
+    @if (loading()) {
+      <div class="loading">Загрузка жеребьёвки...</div>
+    } @else {
+      <div class="toolbar">
+        <div class="participants-count">
+          Участников: <strong>{{ participantCount() }}</strong>
+        </div>
+  
+        <div class="toolbar-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="generating() || participantCount() < 2"
+            (click)="generate()"
+          >
+            {{ generating() ? 'Формирование...' : 'Сформировать жеребьёвку' }}
+          </button>
+        </div>
+      </div>
+  
+      @if (participants().length === 0) {
+        <div class="empty">
+          В этой категории пока нет распределённых спортсменов.
+        </div>
+      } @else {
+        <section class="draw-section">
+          <h3>Посев участников</h3>
+          <p class="hint">
+            Здесь отображается порядок посева. Для изменения расположения
+            спортсменов в олимпийской сетке перетаскивай их в первом круге.
+          </p>
+  
+          <div class="table-wrapper">
+            <table class="draw-table">
+              <thead>
+                <tr>
+                  <th class="position-col">Посев</th>
+                  <th>Спортсмен</th>
+                  <th>Клуб</th>
+                  <th>Тренер</th>
+                  <th>Разряд</th>
+                </tr>
+              </thead>
+  
+              <tbody>
+                @for (athlete of participants(); track athlete.athlete_id; let i = $index) {
+                  <tr>
+                    <td class="position">{{ i + 1 }}</td>
+                    <td class="athlete-name">{{ getAthleteName(athlete) }}</td>
+                    <td>{{ athlete.club_name || '—' }}</td>
+                    <td>{{ athlete.coach_name || '—' }}</td>
+                    <td>{{ athlete.rank_sport || 'Без разряда' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+  
+        @if (format() === 'round_robin') {
+          <section class="draw-section">
+            <h3>Круговая система</h3>
+            <p class="hint">Каждый спортсмен встречается с каждым.</p>
+  
+            <div class="matches">
+              @for (match of matches(); track $index) {
+                <div class="match-card">
+                  <div class="match-number">Бой {{ match.match_number }}</div>
+                  <div class="match-athlete">{{ match.athlete1 }}</div>
+                  <div class="versus">VS</div>
+                  <div class="match-athlete">{{ match.athlete2 }}</div>
+                </div>
+              }
+            </div>
+          </section>
+        } @else if (format() === 'final') {
+          <section class="draw-section">
+            <h3>Финал</h3>
+  
+            @for (match of matches(); track $index) {
+              <div class="match-card final-match">
+                <div class="match-athlete">{{ match.athlete1 }}</div>
+                <div class="versus">VS</div>
+                <div class="match-athlete">{{ match.athlete2 }}</div>
+              </div>
+            }
+          </section>
+        } @else if (format() === 'olympic') {
+          <section class="draw-section">
+            <h3>Олимпийская сетка</h3>
+  
+            <p class="hint">
+              Перетаскивай спортсменов между слотами первого круга.
+              Нажми на участника боя, чтобы назначить победителя.
+              Победитель автоматически перейдёт в следующий круг.
+            </p>
+  
+            @if (drawChanged()) {
+              <button
+                type="button"
+                class="btn btn-success"
+                [disabled]="saving()"
+                (click)="saveDraw()"
+              >
+                {{ saving() ? 'Сохранение...' : 'Сохранить жеребьёвку' }}
+              </button>
+            }
+  
+            <div class="bracket">
+              @for (round of rounds(); track round.round_number) {
+                <div class="bracket-round">
+                  <h4>{{ roundTitle(round) }}</h4>
+  
+                  @for (match of round.matches; track match.id; let i = $index) {
+                    <div class="bracket-match">
+                      <div class="match-number">
+                        Бой {{ match.match_number }}
+                      </div>
+  
+                      <!-- Первый слот -->
+                      @if (round.round_number === 1) {
+                        <div
+                          class="bracket-athlete"
+                          [class.winner]="isWinner(match, match.athlete1_id)"
+                          [class.dragging]="draggedSlot() === i + ':1'"
+                          [draggable]="!!match.athlete1_id && !saving()"
+                          (dragstart)="onSlotDragStart($event, i + ':1')"
+                          (dragover)="onSlotDragOver($event)"
+                          (drop)="onSlotDrop($event, i + ':1')"
+                          (dragend)="onSlotDragEnd()"
+                          (click)="setWinner(match, match.athlete1_id)"
+                        >
+                          {{ match.athlete1_id ? match.athlete1 : (match.status === 'bye' ? 'BYE' : 'Ожидание участника') }}
+  
+                          @if (
+                            match.status === 'completed' &&
+                            match.winner_athlete_id === match.athlete1_id
+                          ) {
+                            <span class="winner-check">✓</span>
+                          }
+                        </div>
+                      } @else {
+                        <button
+                          type="button"
+                          class="bracket-athlete"
+                          [class.winner]="isWinner(match, match.athlete1_id)"
+                          [disabled]="!match.athlete1_id || !match.athlete2_id || match.status !== 'pending'"
+                          (click)="setWinner(match, match.athlete1_id)"
+                        >
+                          {{ match.athlete1_id ? match.athlete1  : (match.status === 'bye' ? 'BYE' : 'Ожидание участника') }} 
+  
+                          @if (
+                            match.status === 'completed' &&
+                            match.winner_athlete_id === match.athlete1_id
+                          ) {
+                            <span class="winner-check">✓</span>
+                          }
+                        </button>
+                      }
+  
+                      <!-- Второй слот -->
+                      @if (round.round_number === 1) {
+                        <div
+                          class="bracket-athlete"
+                          [class.winner]="isWinner(match, match.athlete2_id)"
+                          [class.dragging]="draggedSlot() === i + ':2'"
+                          [draggable]="!!match.athlete2_id && !saving()"
+                          (dragstart)="onSlotDragStart($event, i + ':2')"
+                          (dragover)="onSlotDragOver($event)"
+                          (drop)="onSlotDrop($event, i + ':2')"
+                          (dragend)="onSlotDragEnd()"
+                          (click)="setWinner(match, match.athlete2_id)"
+                        >
+                          {{ match.athlete2_id ? match.athlete2 : (match.status === 'bye' ? 'BYE' : 'Ожидание участника') }}
+  
+                          @if (
+                            match.status === 'completed' &&
+                            match.winner_athlete_id === match.athlete2_id
+                          ) {
+                            <span class="winner-check">✓</span>
+                          }
+                        </div>
+                      } @else {
+                        <button
+                          type="button"
+                          class="bracket-athlete"
+                          [class.winner]="isWinner(match, match.athlete2_id)"
+                          [disabled]="!match.athlete1_id || !match.athlete2_id || match.status !== 'pending'"
+                          (click)="setWinner(match, match.athlete2_id)"
+                        >
+                          {{ match.athlete2_id ? match.athlete2 : (match.status === 'bye' ? 'BYE' : 'Ожидание участника') }}
+  
+                          @if (
+                            match.status === 'completed' &&
+                            match.winner_athlete_id === match.athlete2_id
+                          ) {
+                            <span class="winner-check">✓</span>
+                          }
+                        </button>
+                      }
+  
+                      @if (match.status === 'bye') {
+                        <div class="match-status">Автоматический проход BYE</div>
+                      } @else if (match.status === 'completed') {
+                        <button
+                          type="button"
+                          class="clear-result"
+                          (click)="clearWinner(match)"
+                        >
+                          Отменить результат
+                        </button>
+                      } @else if (match.status === 'empty') {
+                        <div class="match-status">Ожидание участников</div>
+                      } @else if (match.status === 'pending' && (!match.athlete1_id || !match.athlete2_id)) {
+                        <div class="match-status">Ожидание победителя предыдущего круга</div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        }
+      }
+    }
+  </div>

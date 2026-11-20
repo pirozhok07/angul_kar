@@ -1,0 +1,115 @@
+<div class="page">
+
+    <div class="page-header">
+      <div>
+        <h1>Результаты соревнований</h1>
+        <p>Итоговые места спортсменов по категориям</p>
+      </div>
+  
+      <button
+        class="btn btn-primary"
+        (click)="load()"
+        [disabled]="loading()">
+        Обновить
+      </button>
+    </div>
+  
+    <div class="statistics">
+      <div class="stat-card">
+        <span>Категорий</span>
+        <strong>{{ categories().length }}</strong>
+      </div>
+  
+      <div class="stat-card">
+        <span>Призёров</span>
+        <strong>{{ totalAthletes() }}</strong>
+      </div>
+    </div>
+  
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Поиск по категории, спортсмену или клубу..."
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </div>
+  
+    @if (loading()) {
+      <div class="empty-state">
+        Загрузка результатов...
+      </div>
+    }
+  
+    @if (error()) {
+      <div class="error-message">
+        {{ error() }}
+      </div>
+    }
+  
+    @if (!loading() && !error()) {
+  
+      @if (visibleCategories().length === 0) {
+        <div class="empty-state">
+          Результатов пока нет
+        </div>
+      }
+  
+      @for (
+        category of visibleCategories();
+        track category.category_id
+      ) {
+  
+        <section class="category-card">
+  
+          <div class="category-header">
+            <div>
+              <h2>{{ category.category_name }}</h2>
+              <span>
+                {{ category.results.length }} призёров
+              </span>
+            </div>
+          </div>
+  
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Место</th>
+                  <th>Спортсмен</th>
+                  <th>Клуб</th>
+                </tr>
+              </thead>
+  
+              <tbody>
+                @for (
+                  athlete of category.results;
+                  track athlete.id
+                ) {
+                  <tr [class.first-place]="athlete.place === 1">
+  
+                    <td class="place">
+                      <span>{{ medal(athlete.place) }}</span>
+                      {{ placeName(athlete.place) }}
+                    </td>
+  
+                    <td class="athlete-name">
+                      {{ athlete.last_name }}
+                      {{ athlete.first_name }}
+                    </td>
+  
+                    <td>
+                      {{ athlete.club.name || '—' }}
+                    </td>
+  
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+  
+        </section>
+      }
+    }
+  
+  </div>

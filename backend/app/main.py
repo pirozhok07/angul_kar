@@ -10,7 +10,10 @@ from app.routes import (
     clubs, 
     coaches,
     kata_groups,
-    kara_draw
+    kara_draw,
+    kumite_draw,
+    kumite_competition,
+    kata_competition
 )
 
 Base.metadata.create_all(bind=engine)
@@ -45,6 +48,9 @@ app.include_router(clubs.router)
 app.include_router(coaches.router)
 app.include_router(kata_groups.router)
 app.include_router(kara_draw.router)
+app.include_router(kumite_draw.router)
+app.include_router(kumite_competition.router)
+app.include_router(kata_competition.router)
 
 @app.get("/")
 def root():

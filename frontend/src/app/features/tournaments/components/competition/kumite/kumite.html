@@ -1,0 +1,550 @@
+<div class="page">
+    <div class="page-header">
+      <div>
+        <h2>Проведение соревнований</h2>
+        <p class="subtitle">Кумите</p>
+      </div>
+  
+      @if (!settingsMode()) {
+        <button type="button" class="btn btn-secondary" (click)="openSettings()">
+          Настройки татами
+        </button>
+      }
+    </div>
+  
+    @if (error()) {
+      <div class="alert error">{{ error() }}</div>
+    }
+  
+    @if (success()) {
+      <div class="alert success">{{ success() }}</div>
+    }
+  
+    @if (loading()) {
+      <div class="loading">Загрузка...</div>
+    } @else {
+  
+      @if (settingsMode()) {
+        <section class="draw-section">
+          <h3>Количество татами</h3>
+  
+          <div class="tatami-settings">
+            <input
+              type="number"
+              min="1"
+              max="20"
+              [value]="tatamiCount()"
+              (input)="changeTatamiCount(+$any($event.target).value)"
+            />
+  
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="saving() || tatamiCount() < 1 || tatamiCount() > 20"
+              (click)="saveTatamiCount()"
+            >
+              Сохранить количество
+            </button>
+          </div>
+  
+          <div class="tatami-list">
+            @for (tatami of tatamis(); track tatami.id) {
+              <span class="tatami-chip">{{ tatami.name }}</span>
+            }
+          </div>
+        </section>
+  
+        <section class="draw-section">
+          <h3>Распределение категорий</h3>
+  
+          <p class="hint">
+            Для каждой категории выбери татами, на котором она будет проводиться.
+          </p>
+  
+          @if (assignments().length === 0) {
+            <div class="empty">Категории не найдены.</div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="draw-table">
+                <thead>
+                  <tr>
+                    <th>Категория</th>
+                    <th>Татами</th>
+                  </tr>
+                </thead>
+  
+                <tbody>
+                  @for (item of assignments(); track item.category_id) {
+                    <tr>
+                      <td>{{ item.category_name }}</td>
+                      <td>
+                        <select
+                          [value]="item.tatami_id ?? ''"
+                          (change)="assignCategory(
+                            item.category_id,
+                            $any($event.target).value
+                          )"
+                        >
+                          <option value="">Не распределена</option>
+  
+                          @for (tatami of tatamis(); track tatami.id) {
+                            <option [value]="tatami.id">
+                              {{ tatami.name }}
+                            </option>
+                          }
+                        </select>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+  
+          <div class="section-actions">
+            <button
+              type="button"
+              class="btn btn-success"
+              [disabled]="saving() || assignments().length === 0"
+              (click)="saveAssignments()"
+            >
+              {{ saving() ? 'Сохранение...' : 'Сохранить и перейти к проведению' }}
+            </button>
+          </div>
+        </section>
+      }
+  
+      @if (!settingsMode()) {
+  
+        @if (selectedCategoryId() !== null) {
+          <section class="draw-section">
+            <div class="section-header">
+              <div>
+                <h3>{{ selectedCategory()?.category_name }}</h3>
+                <p class="hint">Турнирная сетка категории</p>
+              </div>
+  
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="backToSchedule()"
+              >
+                К списку боёв
+              </button>
+            </div>
+  
+            @if (categoryLoading()) {
+              <div class="loading">Загрузка сетки...</div>
+            } @else if (categoryDraw()) {
+  
+              <!-- ОЛИМПИЙСКАЯ СЕТКА -->
+  
+              @if (categoryDraw().format === 'olympic') {
+                <div class="bracket">
+                  @for (round of categoryDraw().rounds; track round.round_number) {
+                    <div class="bracket-round">
+                      <h4>
+                        {{ round.round_name || ('Круг ' + round.round_number) }}
+                      </h4>
+  
+                      @for (match of round.matches; track match.id) {
+                        <div class="bracket-match">
+                          <div class="match-number">
+                            Бой {{ match.match_number }}
+                          </div>
+  
+                          <button
+                            type="button"
+                            class="bracket-athlete"
+                            [class.winner]="isWinner(match, match.athlete1_id)"
+                            [disabled]="
+                              saving() ||
+                              !match.athlete1_id ||
+                              !match.athlete2_id ||
+                              match.status === 'completed'
+                            "
+                            (click)="setGridWinner(match, match.athlete1_id)"
+                          >
+                            {{ match.athlete1 || 'Ожидание участника' }}
+  
+                            @if (isWinner(match, match.athlete1_id)) {
+                              <span class="winner-check">✓</span>
+                            }
+                          </button>
+  
+                          <button
+                            type="button"
+                            class="bracket-athlete"
+                            [class.winner]="isWinner(match, match.athlete2_id)"
+                            [disabled]="
+                              saving() ||
+                              !match.athlete1_id ||
+                              !match.athlete2_id ||
+                              match.status === 'completed'
+                            "
+                            (click)="setGridWinner(match, match.athlete2_id)"
+                          >
+                            {{ match.athlete2 || 'Ожидание участника' }}
+  
+                            @if (isWinner(match, match.athlete2_id)) {
+                              <span class="winner-check">✓</span>
+                            }
+                          </button>
+  
+                          @if (match.status === 'bye') {
+                            <div class="match-status">
+                              Автоматический проход BYE
+                            </div>
+                          } @else if (match.status === 'completed') {
+                            <div class="match-status completed">
+                              Бой завершён
+                            </div>
+                          } @else if (match.status === 'empty') {
+                            <div class="match-status">Нет участников</div>
+                          } @else if (!match.athlete1_id || !match.athlete2_id) {
+                            <div class="match-status">Ожидание участников</div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+  
+              <!-- КРУГОВАЯ СИСТЕМА -->
+  
+              @else if (categoryDraw().format === 'round_robin') {
+                <div class="matches">
+                  @for (match of categoryDraw().matches; track match.id ?? $index) {
+                    <div class="match-card">
+                      <div class="match-number">
+                        Бой {{ match.match_number }}
+                      </div>
+  
+                      <button
+                        type="button"
+                        class="bracket-athlete"
+                        [class.winner]="isWinner(match, match.athlete1_id)"
+                        [disabled]="
+                          saving() ||
+                          !match.athlete1_id ||
+                          !match.athlete2_id ||
+                          match.status === 'completed'
+                        "
+                        (click)="setGridWinner(match, match.athlete1_id)"
+                      >
+                        {{ match.athlete1 || 'Ожидание участника' }}
+                      </button>
+  
+                      <div class="versus">VS</div>
+  
+                      <button
+                        type="button"
+                        class="bracket-athlete"
+                        [class.winner]="isWinner(match, match.athlete2_id)"
+                        [disabled]="
+                          saving() ||
+                          !match.athlete1_id ||
+                          !match.athlete2_id ||
+                          match.status === 'completed'
+                        "
+                        (click)="setGridWinner(match, match.athlete2_id)"
+                      >
+                        {{ match.athlete2 || 'Ожидание участника' }}
+                      </button>
+  
+                      @if (match.status === 'completed') {
+                        <div class="match-status completed">Бой завершён</div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+  
+              <!-- ФИНАЛ ДЛЯ ДВУХ СПОРТСМЕНОВ
+  
+              @else if (
+                categoryDraw().format === 'final' ||
+                categoryDraw().matches?.length === 1
+              ) {
+                @for (match of categoryDraw().matches; track match.id ?? $index) {
+                  <div class="match-card">
+                    <h4>Финал</h4>
+  
+                    <button
+                      type="button"
+                      class="bracket-athlete"
+                      [class.winner]="isWinner(match, match.athlete1_id)"
+                      [disabled]="
+                        saving() ||
+                        !match.athlete1_id ||
+                        !match.athlete2_id ||
+                        match.status === 'completed'
+                      "
+                      (click)="setGridWinner(match, match.athlete1_id)"
+                    >
+                      {{ match.athlete1 || 'Ожидание участника' }}
+  
+                      @if (isWinner(match, match.athlete1_id)) {
+                        <span class="winner-check">✓</span>
+                      }
+                    </button>
+  
+                    <div class="versus">VS</div>
+  
+                    <button
+                      type="button"
+                      class="bracket-athlete"
+                      [class.winner]="isWinner(match, match.athlete2_id)"
+                      [disabled]="
+                        saving() ||
+                        !match.athlete1_id ||
+                        !match.athlete2_id ||
+                        match.status === 'completed'
+                      "
+                      (click)="setGridWinner(match, match.athlete2_id)"
+                    >
+                      {{ match.athlete2 || 'Ожидание участника' }}
+  
+                      @if (isWinner(match, match.athlete2_id)) {
+                        <span class="winner-check">✓</span>
+                      }
+                    </button>
+  
+                    @if (match.status === 'completed') {
+                      <div class="match-status completed">Бой завершён</div>
+                    } @else if (!match.athlete1_id || !match.athlete2_id) {
+                      <div class="match-status">Ожидание участников</div>
+                    }
+                  </div>
+                }
+              } -->
+  
+              <!-- НЕИЗВЕСТНЫЙ ФОРМАТ -->
+  
+              @else {
+                <div class="empty">
+                  Не удалось определить формат сетки.
+                </div>
+              }
+  
+              <!-- БОЙ ЗА ТРЕТЬЕ МЕСТО -->
+  
+              @if (selectedCategoryBronzeBouts().length > 0) {
+                <div class="bronze-section">
+                  <h3>Бой за 3-е место</h3>
+  
+                  @for (bout of selectedCategoryBronzeBouts(); track bout.bronze_match_id) {
+                    <div class="bracket-match bronze-match">
+                      <div class="match-number">
+                        Бой за третье место
+                      </div>
+  
+                      <button
+                        type="button"
+                        class="bracket-athlete"
+                        [class.winner]="
+                          bout.status === 'completed' &&
+                          bout.winner_athlete_id === bout.athlete1_id
+                        "
+                        [disabled]="
+                          saving() ||
+                          !bout.athlete1_id ||
+                          !bout.athlete2_id ||
+                          bout.status === 'completed'
+                        "
+                        (click)="setBronzeWinner(bout, bout.athlete1_id)"
+                      >
+                        {{ bout.athlete1 || 'Ожидание участника' }}
+  
+                        @if (
+                          bout.status === 'completed' &&
+                          bout.winner_athlete_id === bout.athlete1_id
+                        ) {
+                          <span class="winner-check">✓</span>
+                        }
+                      </button>
+  
+                      <button
+                        type="button"
+                        class="bracket-athlete"
+                        [class.winner]="
+                          bout.status === 'completed' &&
+                          bout.winner_athlete_id === bout.athlete2_id
+                        "
+                        [disabled]="
+                          saving() ||
+                          !bout.athlete1_id ||
+                          !bout.athlete2_id ||
+                          bout.status === 'completed'
+                        "
+                        (click)="setBronzeWinner(bout, bout.athlete2_id)"
+                      >
+                        {{ bout.athlete2 || 'Ожидание участника' }}
+  
+                        @if (
+                          bout.status === 'completed' &&
+                          bout.winner_athlete_id === bout.athlete2_id
+                        ) {
+                          <span class="winner-check">✓</span>
+                        }
+                      </button>
+  
+                      <div class="match-status">
+                        {{ getBoutStatus(bout) }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </section>
+        }
+  
+        <!-- ОБЩИЙ СПИСОК БОЁВ -->
+  
+        @else {
+          <section class="draw-section">
+            <div class="section-header">
+              <div>
+                <h3>Очередность боёв</h3>
+                <p class="hint">
+                  Выбери все татами или отдельное татами.
+                </p>
+              </div>
+  
+              <button
+                type="button"
+                class="btn btn-secondary"
+                [disabled]="saving()"
+                (click)="loadSchedule()"
+              >
+                Обновить
+              </button>
+            </div>
+  
+            <div class="tatami-tabs">
+              <button
+                type="button"
+                class="tab-button"
+                [class.active]="selectedTatamiId() === null"
+                (click)="selectTatami(null)"
+              >
+                Все татами
+              </button>
+  
+              @for (tatami of tatamis(); track tatami.id) {
+                <button
+                  type="button"
+                  class="tab-button"
+                  [class.active]="selectedTatamiId() === tatami.id"
+                  (click)="selectTatami(tatami.id)"
+                >
+                  {{ tatami.name }}
+                </button>
+              }
+            </div>
+  
+            <div class="category-list">
+              <h4>Категории</h4>
+  
+              @for (category of visibleCategories(); track category.category_id) {
+                <button
+                  type="button"
+                  class="category-button"
+                  (click)="openCategory(category.category_id)"
+                >
+                  <span>{{ category.category_name }}</span>
+  
+                  <span class="category-tatami">
+                    {{ getTatamiName(category.tatami_id) }}
+                  </span>
+  
+                  <span>Открыть сетку →</span>
+                </button>
+              }
+            </div>
+          </section>
+  
+          @if (visibleBouts().length === 0) {
+            <section class="draw-section">
+              <div class="empty">Бои не найдены.</div>
+            </section>
+          } @else {
+            @for (
+              bout of visibleBouts();
+              track bout.bout_type + '-' + (bout.match_id ?? bout.bronze_match_id)
+            ) {
+              <section class="bout-card">
+                <div class="bout-header">
+                  <strong>
+                    {{ bout.tatami_name }} — бой №{{ bout.tatami_bout_number }}
+                  </strong>
+  
+                  <span class="bout-stage">{{ bout.stage }}</span>
+                </div>
+  
+                <button
+                  type="button"
+                  class="category-link"
+                  (click)="openCategory(bout.category_id)"
+                >
+                  {{ bout.category_name }}
+                </button>
+  
+                <div class="bout-athletes">
+                  <button
+                    type="button"
+                    [class.winner]="
+                      bout.status === 'completed' &&
+                      bout.winner_athlete_id === bout.athlete1_id
+                    "
+                    [disabled]="
+                      saving() ||
+                      !bout.athlete1_id ||
+                      !bout.athlete2_id ||
+                      bout.status === 'completed'
+                    "
+                    (click)="
+                      bout.bout_type === 'bronze'
+                        ? setBronzeWinner(bout, bout.athlete1_id)
+                        : setBoutWinner(bout, bout.athlete1_id)
+                    "
+                  >
+                    {{ bout.athlete1 || 'Ожидание участника' }}
+                  </button>
+  
+                  <span class="versus">VS</span>
+  
+                  <button
+                    type="button"
+                    [class.winner]="
+                      bout.status === 'completed' &&
+                      bout.winner_athlete_id === bout.athlete2_id
+                    "
+                    [disabled]="
+                      saving() ||
+                      !bout.athlete1_id ||
+                      !bout.athlete2_id ||
+                      bout.status === 'completed'
+                    "
+                    (click)="
+                      bout.bout_type === 'bronze'
+                        ? setBronzeWinner(bout, bout.athlete2_id)
+                        : setBoutWinner(bout, bout.athlete2_id)
+                    "
+                  >
+                    {{ bout.athlete2 || 'Ожидание участника' }}
+                  </button>
+                </div>
+  
+                <div class="bout-status">
+                  {{ getBoutStatus(bout) }}
+                </div>
+              </section>
+            }
+          }
+        }
+      }
+    }
+  </div>

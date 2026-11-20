@@ -54,55 +54,48 @@
   
       @if (participants().length) {
         <div class="draw-list">
-  
-          @for (participant of participants(); track participant.key; let i = $index) {
-            <div class="draw-item">
-  
-              <div class="draw-position">
-                {{ i + 1 }}
-              </div>
-  
-              <div class="participant-info">
-                <strong>{{ participant.name }}</strong>
-  
-                @if (participant.kata_group_id) {
-                  <span class="participant-type">Ката-группа</span>
-  
-                  @for (athlete of participant.athletes ?? []; track athlete.id) {
-                    <span class="member-name">{{ athlete.name }}</span>
-                  }
-                } @else {
-                  <span class="participant-type">Спортсмен</span>
-                }
-  
-                <div class="clubs">
-                  Клубы:
-                  @for (club of participant.clubs ?? []; track club.club_id ?? club.club_name) {
-                    <span>{{ club.club_name }}</span>
-                  }
+
+            @for (participant of participants(); track participant.key; let i = $index) {
+              <div
+                class="draw-item"
+                [class.dragging]="draggedIndex() === i"
+                draggable="true"
+                (dragstart)="onDragStart(i, $event)"
+                (dragover)="onDragOver($event)"
+                (drop)="onDrop(i, $event)"
+                (dragend)="onDragEnd()">
+          
+                <div class="drag-handle" title="Перетащить участника">
+                  <span>⠿</span>
                 </div>
+          
+                <div class="draw-position">
+                  {{ i + 1 }}
+                </div>
+          
+                <div class="participant-info">
+                  <strong>{{ participant.name }}</strong>
+          
+                  @if (participant.kata_group_id) {
+                    <span class="participant-type">Ката-группа</span>
+          
+                    @for (athlete of participant.athletes ?? []; track athlete.id) {
+                      <span class="member-name">{{ athlete.name }}</span>
+                    }
+                  } @else {
+                    <span class="participant-type">Спортсмен</span>
+                  }
+          
+                  <div class="clubs">
+                    Клубы:
+                    @for (club of participant.clubs ?? []; track club.club_id ?? club.club_name) {
+                      <span>{{ club.club_name }}</span>
+                    }
+                  </div>
+                </div>
+          
               </div>
-  
-              <div class="move-buttons">
-                <button
-                  type="button"
-                  title="Переместить выше"
-                  (click)="move(i, -1)"
-                  [disabled]="i === 0">
-                  ↑
-                </button>
-  
-                <button
-                  type="button"
-                  title="Переместить ниже"
-                  (click)="move(i, 1)"
-                  [disabled]="i === participants().length - 1">
-                  ↓
-                </button>
-              </div>
-  
-            </div>
-          }
+            }
   
         </div>
       } @else {
@@ -112,4 +105,4 @@
       }
     }
   
-  </div>
+</div>

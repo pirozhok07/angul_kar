@@ -56,11 +56,19 @@
                     <span>*</span> Категории
                 </a>
 
+                <a [routerLink]="['competition/kumite']" routerLinkActive="active">
+                    <span>*</span> Соревнования Кумите
+                </a>
+
+                <a [routerLink]="['competition/kata']" routerLinkActive="active">
+                    <span>*</span> Соревнования Ката
+                </a>
+
                 <a routerLink="judges" routerLinkActive="active">
                     <span>*</span> Судьи
                 </a>
 
-                <a routerLink="results" routerLinkActive="active">
+                <a [routerLink]="['competition/results']" routerLinkActive="active">
                     <span>*</span> Результаты
                 </a>
 

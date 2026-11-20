@@ -1,8 +1,11 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, TrailingSlashPathLocationStrategy } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { KataService } from '../kata.service';
+import { tick } from '@angular/core/testing';
+import { INITIAL_CONFIG } from '@angular/platform-server';
+import { isTypedArray } from 'util/types';
 
 @Component({
   imports: [CommonModule, RouterLink],
@@ -18,6 +21,7 @@ export class KataDraw implements OnInit {
   tournamentId = 0;
   categoryId = 0;
 
+  draggedIndex = signal<number | null>(null);
   category = signal<any>(null);
   participants = signal<any[]>([]);
 
@@ -94,20 +98,44 @@ export class KataDraw implements OnInit {
     });
   }
 
-  move(index: number, direction: number): void {
-    const items = [...this.participants()];
-    const newIndex = index + direction;
+  onDragStart(index:number, event: DragEvent):void {
+    this.draggedIndex.set(index);
 
-    if (newIndex < 0 || newIndex >= items.length) {
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = "move";
+    }
+  }
+
+  onDrop(targetIndex: number, event: DragEvent): void {
+    event.preventDefault();
+  
+    const sourceIndex = this.draggedIndex();
+  
+    if (sourceIndex === null || sourceIndex === targetIndex) {
+      this.draggedIndex.set(null);
       return;
     }
-
-    [items[index], items[newIndex]] = [
-      items[newIndex],
-      items[index]
-    ];
-
+  
+    const items = [...this.participants()];
+    const [movedItem] = items.splice(sourceIndex, 1);
+  
+    items.splice(targetIndex, 0, movedItem);
+  
     this.participants.set(items);
+    this.draggedIndex.set(null);
+  }
+
+  onDragEnd(): void {
+    this.draggedIndex.set(null);
   }
 
   save(): void {

@@ -1,0 +1,376 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h2>Проведение соревнований</h2>
+      <p class="subtitle">Ката</p>
+    </div>
+
+    @if (!settingsMode()) {
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="openSettings()"
+      >
+        Настройки татами
+      </button>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="alert error">{{ error() }}</div>
+  }
+
+  @if (success()) {
+    <div class="alert success">{{ success() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading">Загрузка...</div>
+  } @else {
+
+    <!-- НАСТРОЙКИ -->
+    @if (settingsMode()) {
+      <section class="draw-section">
+        <h3>Количество татами для ката</h3>
+
+        <div class="tatami-settings">
+          <input
+            type="number"
+            min="1"
+            max="20"
+            [value]="tatamiCount()"
+            (input)="changeTatamiCount(+$any($event.target).value)"
+          />
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="saving() || tatamiCount() < 1 || tatamiCount() > 20"
+            (click)="saveTatamiCount()"
+          >
+            Сохранить количество
+          </button>
+        </div>
+
+        <div class="tatami-list">
+          @for (tatami of tatamis(); track tatami.id) {
+            <span class="tatami-chip">{{ tatami.name }}</span>
+          }
+        </div>
+      </section>
+
+      <section class="draw-section">
+        <div class="distribution" cdkDropListGroup>
+
+          <div class="distribution-list">
+            <h3>Все категории</h3>
+        
+            <div
+              class="drop-zone unassigned-zone"
+              cdkDropList
+              id="unassigned"
+              [cdkDropListData]="unassignedCategories()"
+              (cdkDropListDropped)="dropCategory($event, null)"
+            >
+              @for (category of unassignedCategories(); track category.category_id ?? category.id) {
+                <div
+                  class="category-drag"
+                  cdkDrag
+                  [cdkDragData]="category"
+                >
+                  {{ category.category_name ?? category.name }}
+                </div>
+              }
+        
+              @if (unassignedCategories().length === 0) {
+                <p class="empty-message">Все категории распределены</p>
+              }
+            </div>
+          </div>
+        
+          <div class="tatami-distribution">
+            <h3>Распределение по татами</h3>
+        
+            <div class="tatami-grid">
+              @for (tatami of tatamis(); track tatami.id) {
+                <div class="tatami-cell">
+                  <h4>{{ tatami.name }}</h4>
+        
+                  <div
+                    class="drop-zone"
+                    cdkDropList
+                    [id]="'tatami-' + tatami.id"
+                    [cdkDropListData]="tatamiCategories()[tatami.id] ?? []"
+                    (cdkDropListDropped)="dropCategory($event, tatami.id)"
+                  >
+                    @for (
+                      category of (tatamiCategories()[tatami.id] ?? []);
+                      track category.category_id ?? category.id
+                    ) {
+                      <div
+                        class="category-drag"
+                        cdkDrag
+                        [cdkDragData]="category"
+                      >
+                        <span>{{ category.category_name ?? category.name }}</span>
+                        
+                      </div>
+                    }
+        
+                    @if ((tatamiCategories()[tatami.id] ?? []).length === 0) {
+                      <p class="empty-message">
+                        Перетащите сюда категории
+                      </p>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        
+        <button
+          type="button"
+          (click)="saveAssignments()"
+          [disabled]="assignmentsSaving()"
+        >
+          {{ assignmentsSaving() ? 'Сохранение...' : 'Сохранить распределение' }}
+        </button>
+      </section>
+    }
+
+    <!-- ПРОВЕДЕНИЕ -->
+    @if (!settingsMode()) {
+      <section class="draw-section">
+        <div class="section-header">
+          <div>
+            <h3>Соревнования по ката</h3>
+            <p class="hint">
+              Категории проводятся параллельно на разных татами.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="saving()"
+            (click)="loadCategories()"
+          >
+            Обновить
+          </button>
+        </div>
+
+        <!-- ФИЛЬТР ТАТАМИ -->
+        <div class="tatami-tabs">
+          <button
+            type="button"
+            class="tab-button"
+            [class.active]="selectedTatamiId() === null"
+            (click)="selectTatami(null)"
+          >
+            Все татами
+          </button>
+
+          @for (tatami of tatamis(); track tatami.id) {
+            <button
+              type="button"
+              class="tab-button"
+              [class.active]="selectedTatamiId() === tatami.id"
+              (click)="selectTatami(tatami.id)"
+            >
+              {{ tatami.name }}
+            </button>
+          }
+        </div>
+
+        <!-- КАТЕГОРИИ ПО ТАТАМИ -->
+        @for (tatami of visibleTatamis(); track tatami.id) {
+          <div class="tatami-block">
+            <h3>{{ tatami.name }}</h3>
+
+            @if (tatami.categories.length === 0) {
+              <div class="empty">Нет назначенных категорий</div>
+            }
+
+            @for (category of tatami.categories; track category.category_id) {
+              <div class="category-card">
+                
+                  <button
+                    type="button"
+                    class="category-button"
+                    (click)="openCategory(category.category_id)"
+                  >
+                    <span>{{ category.category_name }}</span>
+  
+    
+                    <span>Открыть сетку →</span>
+                  </button>
+
+                <!-- СОРЕВНОВАНИЕ КАТЕГОРИИ -->
+                @if (isCategoryOpen(category.category_id)) {
+                  @if (competitionFor(category.category_id); as competition) {
+                    <div class="kata-competition">
+                      <div class="round-tabs">
+                        @for (round of roundsFor(category.category_id); track round.id) {
+                          <button
+                            type="button"
+                            class="round-tab"
+                            [class.active]="activeRoundId(category.category_id) === round.id"
+                            [class.completed]="round.status === 'completed'"
+                            (click)="selectRound(category.category_id, round.id)"
+                          >
+                            @if (round.round_type === 'tiebreak') {
+                              Дополнительный круг
+                            } @else {
+                              {{ round.number }} круг
+                            }
+
+                            @if (round.status === 'completed') {
+                              ✓
+                            }
+                          </button>
+                        }
+                      </div>
+
+                      @if (activeRoundFor(category.category_id); as round) {
+                        <div class="round-header">
+                          <div>
+                            <h4>
+                              @if (round.round_type === 'tiebreak') {
+                                Дополнительный круг
+                              } @else {
+                                {{ round.number }} круг
+                              }
+                            </h4>
+
+                            <span>
+                              Участников: {{ round.participants.length }}
+                            </span>
+                          </div>
+
+                          @if (
+                            round.status !== 'completed' &&
+                            competition.status !== 'completed'
+                          ) {
+                            <button
+                              type="button"
+                              class="btn btn-primary"
+                              [disabled]="saving()"
+                              (click)="finishRound(category.category_id, round.id)"
+                            >
+                              Завершить круг
+                            </button>
+                          }
+                        </div>
+
+                        <div class="table-wrapper">
+                          <table class="draw-table">
+                            <thead>
+                              <tr>
+                                <th>№</th>
+                                <th>Участник</th>
+                                <th>Судья 1</th>
+                                <th>Судья 2</th>
+                                <th>Судья 3</th>
+                                <th>Судья 4</th>
+                                <th>Судья 5</th>
+                                <th>Итого</th>
+                                <th></th>
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              @for (participant of round.participants; track participant.id) {
+                                <tr>
+                                  <td>{{ participant.position }}</td>
+
+                                  <td>
+                                    @if (participant.athlete_id) {
+                                      {{ getAthleteName(participant.athlete_id) }}
+                                    } @else {
+                                      Группа ката #{{ participant.kata_group_id }}
+                                    }
+                                  </td>
+
+                                  @for (judge of [0, 1, 2, 3, 4]; track judge) {
+                                    <td>
+                                      <input
+                                        class="score-input"
+                                        type="number"
+                                        min="6"
+                                        max="8"
+                                        step="0.1"
+                                        [disabled]="round.status === 'completed'"
+                                        [ngModel]="getScores(category.category_id, participant.id)[judge]"
+                                        (ngModelChange)="updateScore(category.category_id, participant.id, judge, $event)"
+                                      />
+                                    </td>
+                                  }
+
+                                  <td class="total-score">
+                                    {{ calculateTotal(getScores(category.category_id, participant.id)) | number:'1.1-1' }}
+                                  </td>
+
+                                  <td>
+                                    @if (round.status !== 'completed') {
+                                      <button
+                                        type="button"
+                                        class="btn btn-small btn-primary"
+                                        [disabled]="saving()"
+                                        (click)="saveScores(category.category_id, round.id, participant.id)"
+                                      >
+                                        Сохранить
+                                      </button>
+                                    } @else {
+                                      <span class="saved">Сохранено</span>
+                                    }
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+
+                      @if (competition.status === 'completed') {
+                        <div class="results-section">
+                          <h4>Итоговые результаты</h4>
+
+                          <table class="draw-table">
+                            <thead>
+                              <tr>
+                                <th>Место</th>
+                                <th>Участник</th>
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              @for (result of resultsFor(category.category_id); track result.place) {
+                                <tr>
+                                  <td>{{ result.place }}</td>
+                                  <td>
+                                    @if (result.athlete_id) {
+                                      Спортсмен #{{ result.athlete_id }}
+                                    } @else {
+                                      Группа ката #{{ result.kata_group_id }}
+                                    }
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="loading">Загрузка соревнования...</div>
+                  }
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
+</div>

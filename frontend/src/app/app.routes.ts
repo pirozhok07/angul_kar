@@ -7,6 +7,7 @@ import { CATEGORIES_ROUTES } from './features/tournaments/components/categories/
 import { CLUBS_ROUTES } from './features/tournaments/components/clubs/clubs.routes';
 import { COACHES_ROUTES } from './features/tournaments/components/coaches/coaches.routes';
 import { KATA_GROUPS_ROUTES } from './features/tournaments/components/kata-groups/kata-groups.routes';
+import { COMPETITIONS_ROUTES } from './features/tournaments/components/competition/competitions.routes';
 
 export const routes: Routes = [
     {
@@ -43,6 +44,10 @@ export const routes: Routes = [
             {
                 path: 'kata-groups',
                 children: KATA_GROUPS_ROUTES
+            },
+            {
+                path: 'competition',
+                children: COMPETITIONS_ROUTES
             },
         ]
     },

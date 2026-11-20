@@ -2,7 +2,11 @@
     <div class="page-header">
       <div>
         <a routerLink="../" class="back-link">← Все категории</a><br>
-        <a [routerLink]="['/tournaments', tournamentId, 'categories', 'kata-draw', categoryId]" class="draw-link">Жеребьевка</a>
+        @if (category().discipline === "kumite") {
+            <a [routerLink]="['/tournaments', tournamentId, 'categories', 'kumite-draw', categoryId]" class="draw-link">Жеребьевка</a>
+        } @else {
+            <a [routerLink]="['/tournaments', tournamentId, 'categories', 'kata-draw', categoryId]" class="draw-link">Жеребьевка</a>
+        }
         <h2>{{ category()?.category_name || 'Спортсмены категории' }}</h2>
         <p>Количество спортсменов: {{ participants().length }}</p>
       </div>

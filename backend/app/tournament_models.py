@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
-from sqlalchemy import CheckConstraint, String, Integer, Date, Numeric, Boolean, Column, ForeignKey, Text, UniqueConstraint
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import CheckConstraint, Float, String, Integer, Date, Numeric, Boolean, Column, ForeignKey, Text, UniqueConstraint
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class TournamentBase(DeclarativeBase):
@@ -26,6 +26,8 @@ class Athlete(TournamentBase):
     # is_present: Mapped[bool] = mapped_column(Boolean, default=False)
     # is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     registration_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+
+    club = relationship("Club")
 
     club_id: Mapped[int] = mapped_column(
         Integer, 
@@ -181,7 +183,7 @@ class CategoryDistribution(TournamentBase):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     draw_order: Mapped[int] = mapped_column(Integer, nullable=True)
-    
+
     category_id: Mapped[int] = mapped_column(
         Integer, 
         ForeignKey("categories.id", ondelete="CASCADE"), 
@@ -234,4 +236,369 @@ class Undistribution(TournamentBase):
         ForeignKey("athletes.id", ondelete="CASCADE"), 
         nullable=False,
         index=True
+    )
+
+class KumiteDrawEntry(TournamentBase):
+    __tablename__ = "kumite_draw_entries"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+
+    category_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    athlete_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    draw_position: Mapped[int] = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "category_id",
+            "athlete_id",
+            name="uq_kumite_draw_category_athlete"
+        ),
+        UniqueConstraint(
+            "category_id",
+            "draw_position",
+            name="uq_kumite_draw_category_position"
+        ),
+    )
+
+class KumiteDrawMatch(TournamentBase):
+    __tablename__ = "kumite_draw_matches"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    category_id = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    round_number: Mapped[int] = Column(Integer, nullable=False)
+    match_number: Mapped[int] = Column(Integer, nullable=False)
+
+    athlete1_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    athlete2_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    winner_athlete_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    athlete1 = relationship("Athlete", foreign_keys=[athlete1_id])
+    athlete2= relationship("Athlete", foreign_keys=[athlete2_id])
+
+    match_type: Mapped[str] = Column(String(20), nullable=False, default="regular")
+    status: Mapped[str] = Column(String(20), nullable=False, default="pending")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "category_id",
+            "round_number",
+            "match_number",
+            name="uq_kumite_match_round"
+        ),
+    )
+
+class KumiteTatami(TournamentBase):
+    __tablename__ = "kumite_tatamis"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = Column(String(50), nullable=False, unique=True)
+    number: Mapped[int] = Column(Integer, nullable=False, unique=True)
+
+class KataTatami(TournamentBase):
+    __tablename__ = "kata_tatamis"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = Column(String(50), nullable=False, unique=True)
+    number: Mapped[int] = Column(Integer, nullable=False, unique=True)
+
+
+class CategoryTatami(TournamentBase):
+    __tablename__ = "category_tatamis"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    position: Mapped[int] = Column(Integer, nullable=False, default=0)
+
+    category_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    kata_tatami_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("kata_tatamis.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+    kumite_tatami_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("kumite_tatamis.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+class BronzeMatchResult(TournamentBase):
+    __tablename__ = "bronze_match_results"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+
+    category_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    athlete1_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    athlete2_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    winner_athlete_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
+    athlete1 = relationship("Athlete", foreign_keys=[athlete1_id])
+    athlete2 = relationship("Athlete", foreign_keys=[athlete2_id])
+
+    status: Mapped[str] = Column(String(20), nullable=False, default="pending")
+
+class KumiteResult(TournamentBase):
+    __tablename__ = "kumite_results"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    category_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    athlete_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    place: Mapped[int] = Column(Integer, nullable=False)
+
+    athlete = relationship("Athlete")
+    category = relationship("Category")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "category_id",
+            "athlete_id",
+            name="uq_kumite_result_athlete"
+        ),
+        UniqueConstraint(
+            "category_id",
+            "place",
+            name="uq_kumite_result_place"
+        ),
+    )
+
+class KataCompetition(TournamentBase):
+    __tablename__ = "kata_competitions"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    category_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    status: Mapped[str] = Column(String(20), nullable=False, default="created")
+
+
+class KataRound(TournamentBase):
+    __tablename__ = "kata_rounds"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    competition_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("kata_competitions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    number: Mapped[int] = Column(Integer, nullable=False)
+    round_type: Mapped[str] = Column(String(20), nullable=False, default="regular")
+    status: Mapped[str] = Column(String(20), nullable=False, default="pending")
+    source_round_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("kata_rounds.id", ondelete="CASCADE"),
+        nullable=True
+    )
+
+    advancement_limit: Mapped[int] = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "competition_id",
+            "number",
+            name="uq_kata_round_competition_number"
+        ),
+    )
+    
+
+
+class KataRoundParticipant(TournamentBase):
+    __tablename__ = "kata_round_participants"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+
+    round_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("kata_rounds.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    athlete_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+    kata_group_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("kata_groups.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
+    position: Mapped[int] = Column(Integer, nullable=False)
+    total_score: Mapped[float] = Column(Float, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            """
+            (athlete_id IS NOT NULL AND kata_group_id IS NULL)
+            OR
+            (athlete_id IS NULL AND kata_group_id IS NOT NULL)
+            """,
+            name="ck_kata_round_participant_one_type"
+        ),
+        UniqueConstraint(
+            "round_id",
+            "athlete_id",
+            name="uq_kata_round_athlete"
+        ),
+        UniqueConstraint(
+            "round_id",
+            "kata_group_id",
+            name="uq_kata_round_group"
+        ),
+    )
+
+
+class KataScore(TournamentBase):
+    __tablename__ = "kata_scores"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    round_participant_id = Column(
+        Integer,
+        ForeignKey("kata_round_participants.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    score1 = Column(Float, nullable=True)
+    score2 = Column(Float, nullable=True)
+    score3 = Column(Float, nullable=True)
+    score4 = Column(Float, nullable=True)
+    score5 = Column(Float, nullable=True)
+
+    total_score = Column(Float, nullable=True)
+    max_score = Column(Float, nullable=True)
+    min_score = Column(Float, nullable=True)
+
+    is_confirmed = Column(Boolean, nullable=False, default=False)
+
+
+class KataCompetitionResult(TournamentBase):
+    __tablename__ = "kata_competition_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    competition_id = Column(
+        Integer,
+        ForeignKey("kata_competitions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    athlete_id = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
+        nullable=True
+    )
+
+    kata_group_id = Column(
+        Integer,
+        ForeignKey("kata_groups.id", ondelete="CASCADE"),
+        nullable=True
+    )
+
+    place = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            """
+            (athlete_id IS NOT NULL AND kata_group_id IS NULL)
+            OR
+            (athlete_id IS NULL AND kata_group_id IS NOT NULL)
+            """,
+            name="ck_kata_result_one_type"
+        ),
+        UniqueConstraint(
+            "competition_id",
+            "athlete_id",
+            name="uq_kata_result_athlete"
+        ),
+        UniqueConstraint(
+            "competition_id",
+            "kata_group_id",
+            name="uq_kata_result_group"
+        ),
+        UniqueConstraint(
+            "competition_id",
+            "place",
+            name="uq_kata_result_place"
+        ),
     )
