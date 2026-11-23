@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from ..tournament_database import get_tournament_db
+from ..tournament_database_ import get_tournament_db
 from ..tournament_models import (
     Category,
     Athlete,

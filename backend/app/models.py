@@ -1,7 +1,7 @@
 from sqlalchemy import String, Integer, Date, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from backend.app.database_ import Base
 
 class Tournament(Base):
     __tablename__ = "tournaments"

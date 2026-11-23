@@ -10,8 +10,8 @@ from openpyxl import Workbook, load_workbook
 from sqlalchemy import func, inspect
 from sqlalchemy.orm import Session
 
-from app.tournament_database import get_tournament_db
-from app.tournament_database import get_db
+from backend.app.tournament_database_ import get_tournament_db
+from backend.app.tournament_database_ import get_db
 from app.tournament_models import Athlete, Club, Coach
 from app.models import Tournament
 

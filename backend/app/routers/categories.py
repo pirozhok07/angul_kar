@@ -2,13 +2,13 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.tournament_database import get_tournament_db
+from app.database.master import get_db
+from app.database.tournament import get_tournament_db
 from app.models import Tournament
 from app.tournament_models import (
     Category,
@@ -130,7 +130,10 @@ def get_athlete_age(athlete, reference_date: date):
     stored_age = getattr(athlete, "age_at_tournament", None)
 
     if stored_age is not None:
-        return int(stored_age)
+        try:
+            return int(stored_age)
+        except (TypeError, ValueError):
+            return None
 
     return None
 
@@ -249,7 +252,7 @@ def get_athlete_categories(
         if is_kata_group_category(category):
             continue
 
-        discipline = normalize_discipline(category.discipline)
+        discipline = normalize_discipline(getattr(category, "discipline", None))
 
         if discipline not in ("kata", "kumite"):
             continue
@@ -501,6 +504,7 @@ def distribute_athletes(
         new_distribution = []
         new_undistributed = []
         invalid_groups = []
+        partial_assignments = []
 
         # ----------------------------------------------------
         # ИНДИВИДУАЛЬНЫЕ ДИСЦИПЛИНЫ
@@ -522,6 +526,7 @@ def distribute_athletes(
                     by_discipline[discipline].append(suggestion)
 
             assigned_disciplines = []
+            ambiguous_disciplines = []
 
             for discipline, options in by_discipline.items():
 
@@ -536,10 +541,19 @@ def distribute_athletes(
 
                 elif len(options) > 1:
                     # Не выбираем произвольную категорию.
-                    # При неоднозначности оставляем спортсмена
-                    # нераспределённым по этой дисциплине.
-                    continue
+                    ambiguous_disciplines.append(discipline)
 
+            if assigned_disciplines and ambiguous_disciplines:
+                partial_assignments.append({
+                    "athlete_id": athlete["athlete_id"],
+                    "assigned_disciplines": assigned_disciplines,
+                    "ambiguous_disciplines": ambiguous_disciplines,
+                })
+
+            # Таблица Undistribution хранит спортсменов, которые не попали
+            # ни в одну индивидуальную категорию. Частичное распределение
+            # (например, kata определено, kumite неоднозначно) не дублируем
+            # там, но возвращаем предупреждение в результате операции.
             if not assigned_disciplines:
                 reason = athlete["reason"]
 
@@ -598,11 +612,11 @@ def distribute_athletes(
 
         return {
             "message": "Распределение выполнено",
-            "distributed_athletes": sum(
-                1
+            "distributed_athletes": len({
+                item["athlete_id"]
                 for item in new_distribution
                 if item["athlete_id"] is not None
-            ),
+            }),
             "distributed_kata_groups": sum(
                 1
                 for item in new_distribution
@@ -610,6 +624,7 @@ def distribute_athletes(
             ),
             "undistributed_athletes": len(new_undistributed),
             "invalid_kata_groups": invalid_groups,
+            "partial_assignments": partial_assignments,
             "details": {
                 "distribution": new_distribution,
                 "undistributed": new_undistributed
@@ -625,7 +640,7 @@ def distribute_athletes(
 
         raise HTTPException(
             status_code=500,
-            detail=f"Ошибка базы данных при распределении: {str(error)}"
+            detail="Ошибка базы данных при распределении"
         )
 
     except Exception as error:
@@ -633,7 +648,7 @@ def distribute_athletes(
 
         raise HTTPException(
             status_code=500,
-            detail=f"Ошибка распределения: {str(error)}"
+            detail="Не удалось выполнить распределение"
         )
 
 
@@ -789,19 +804,16 @@ def get_category_athletes(
     participants = []
 
     for item in distributions:
+        data = None
+
         if item.athlete_id is not None:
-            athlete = db.query(Athlete).filter(
-                Athlete.id == item.athlete_id
-            ).first()
-
-            if athlete:
+            athlete = db.get(Athlete, item.athlete_id)
+            if athlete is not None:
                 data = serialize_model(athlete)
-        elif item.kata_group_id is not None:
-            group = db.query(KataGroup).filter(
-                KataGroup.id == item.kata_group_id
-            ).first()
 
-            if group:
+        elif item.kata_group_id is not None:
+            group = db.get(KataGroup, item.kata_group_id)
+            if group is not None:
                 data = serialize_model(group)
                 members = (
                     db.query(Athlete)
@@ -812,14 +824,17 @@ def get_category_athletes(
                     .filter(
                         KataGroupAthlete.kata_group_id == group.id
                     )
+                    .order_by(Athlete.id)
                     .all()
                 )
                 data["athletes"] = [
                     serialize_model(athlete)
                     for athlete in members
                 ]
-                
-        participants.append(data)
+                data["athlete_count"] = len(members)
+
+        if data is not None:
+            participants.append(data)
         
     return {
         "category": serialize_model(category),
@@ -831,20 +846,54 @@ def get_category_athletes(
 # CRUD КАТЕГОРИЙ
 # ============================================================
 
-def validate_category_data(data: dict[str, Any]):
+def validate_category_data(
+    data: dict[str, Any],
+    *,
+    is_create: bool = False,
+) -> dict[str, Any]:
+    if not isinstance(data, dict) or not data:
+        raise HTTPException(
+            status_code=422,
+            detail="Передайте непустой JSON-объект с полями категории",
+        )
+
     columns = {
-        column.key
+        column.key: column
         for column in inspect(Category).columns
     }
-
-    allowed = columns - {"id"}
-    unknown = set(data.keys()) - allowed
+    allowed = set(columns) - {"id"}
+    unknown = set(data) - allowed
 
     if unknown:
         raise HTTPException(
             status_code=422,
-            detail=f"Неизвестные поля: {', '.join(sorted(unknown))}"
+            detail=f"Неизвестные или запрещённые поля: {', '.join(sorted(unknown))}",
         )
+
+    for field, value in data.items():
+        column = columns[field]
+        if value is None and not column.nullable:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Поле '{field}' не может быть null",
+            )
+
+    if is_create:
+        missing = [
+            column.key
+            for column in columns.values()
+            if column.key != "id"
+            and not column.nullable
+            and column.default is None
+            and column.server_default is None
+            and column.key not in data
+            and not column.primary_key
+        ]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Не заполнены обязательные поля: {', '.join(missing)}",
+            )
 
     return data
 
@@ -885,7 +934,7 @@ def create_category(
     data: dict[str, Any] = Body(...),
     db: Session = Depends(get_tournament_db)
 ):
-    data = validate_category_data(data)
+    data = validate_category_data(data, is_create=True)
 
     category = Category(**data)
 
@@ -900,7 +949,7 @@ def create_category(
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail=f"Не удалось создать категорию: {e}"
+            detail="Не удалось создать категорию. Проверьте переданные данные"
         )
 
 

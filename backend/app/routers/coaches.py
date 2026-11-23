@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, func, inspect
 
-from app.tournament_database import get_tournament_db
+from backend.app.tournament_database_ import get_tournament_db
 from app.tournament_models import Coach, Club
 from app.models import Tournament
-from app.database import get_db
+from backend.app.database_ import get_db
 
 router = APIRouter(
     prefix="/api/tournaments/{tournament_id}/coaches",

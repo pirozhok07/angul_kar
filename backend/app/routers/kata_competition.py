@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import Optional
 
-from app.tournament_database import get_tournament_db
+from backend.app.tournament_database_ import get_tournament_db
 from app.tournament_models import (
     Category,
     CategoryDistribution,
