@@ -1,0 +1,73 @@
+<section class="export-page">
+    <header class="page-header">
+      <div>
+        <h1>Выгрузка</h1>
+        <p>Управление выгрузкой турнира</p>
+      </div>
+    </header>
+  
+    @if (error()) {
+      <div class="error-message">{{ error() }}</div>
+    }
+  
+  
+    @if (loading()) {
+      <p class="empty-message">Загрузка...</p>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+          <tr>
+            <td>Раздел</td>
+            <td >Выгрузить</td>
+          </tr>
+          </thead>
+  
+          <tbody>
+            <tr>
+                <td>Протоколы</td>
+                <td>
+                  <button
+                    type="button"
+                    class="button primary-button"
+                    (click)="categories()"
+                  >Excel</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Кумите</td>
+                <td>
+                  <button
+                    type="button"
+                    class="button primary-button"
+                    (click)="kumite()"
+                  >Excel</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Ката</td>
+                <td>
+                  <button
+                    type="button"
+                    class="button primary-button"
+                    (click)="kata()"
+                  >Excel</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Результаты</td>
+                <td>
+                  <button
+                    type="button"
+                    class="button primary-button"
+                    (click)="results()"
+                  >Excel</button>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    }
+  
+    
+  </section>

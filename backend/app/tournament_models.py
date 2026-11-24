@@ -395,39 +395,6 @@ class BronzeMatchResult(TournamentBase):
 
     status: Mapped[str] = Column(String(20), nullable=False, default="pending")
 
-class KumiteResult(TournamentBase):
-    __tablename__ = "kumite_results"
-
-    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
-    category_id: Mapped[int] = Column(
-        Integer,
-        ForeignKey("categories.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
-    athlete_id: Mapped[int] = Column(
-        Integer,
-        ForeignKey("athletes.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
-    place: Mapped[int] = Column(Integer, nullable=False)
-
-    athlete = relationship("Athlete")
-    category = relationship("Category")
-
-    __table_args__ = (
-        UniqueConstraint(
-            "category_id",
-            "athlete_id",
-            name="uq_kumite_result_athlete"
-        ),
-        UniqueConstraint(
-            "category_id",
-            "place",
-            name="uq_kumite_result_place"
-        ),
-    )
 
 class KataCompetition(TournamentBase):
     __tablename__ = "kata_competitions"
@@ -550,32 +517,32 @@ class KataScore(TournamentBase):
 
     is_confirmed = Column(Boolean, nullable=False, default=False)
 
+class Result(TournamentBase):
+    __tablename__ = "results"
 
-class KataCompetitionResult(TournamentBase):
-    __tablename__ = "kata_competition_results"
-
-    id = Column(Integer, primary_key=True, index=True)
-
-    competition_id = Column(
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    category_id: Mapped[int] = Column(
         Integer,
-        ForeignKey("kata_competitions.id", ondelete="CASCADE"),
+        ForeignKey("categories.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-
-    athlete_id = Column(
+    athlete_id: Mapped[int] = Column(
         Integer,
         ForeignKey("athletes.id", ondelete="CASCADE"),
-        nullable=True
+        nullable=False,
+        index=True
     )
-
     kata_group_id = Column(
         Integer,
         ForeignKey("kata_groups.id", ondelete="CASCADE"),
         nullable=True
     )
+    place: Mapped[int] = Column(Integer, nullable=False)
 
-    place = Column(Integer, nullable=False)
+    athlete = relationship("Athlete")
+    kata_group = relationship("KataGroup")
+    category = relationship("Category")
 
     __table_args__ = (
         CheckConstraint(
@@ -587,17 +554,17 @@ class KataCompetitionResult(TournamentBase):
             name="ck_kata_result_one_type"
         ),
         UniqueConstraint(
-            "competition_id",
+            "category_id",
             "athlete_id",
             name="uq_kata_result_athlete"
         ),
         UniqueConstraint(
-            "competition_id",
+            "category_id",
             "kata_group_id",
             name="uq_kata_result_group"
         ),
         UniqueConstraint(
-            "competition_id",
+            "category_id",
             "place",
             name="uq_kata_result_place"
         ),

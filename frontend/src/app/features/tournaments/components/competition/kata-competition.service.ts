@@ -14,6 +14,10 @@ export class KataCompetitionService {
     return `${this.apiUrl}/${tournamentId}/kata-competition`;
   }
 
+  private resultUrl(tournamentId: number): string {
+    return `${this.apiUrl}/${tournamentId}/result`;
+  }
+
   getCategories(tournamentId: number): Observable<any[]> {
     return this.http.get<any[]>(
       `${this.url(tournamentId)}/categories`
@@ -67,7 +71,7 @@ export class KataCompetitionService {
 
   getResults(tournamentId: number, categoryId: number): Observable<any[]> {
     return this.http.get<any[]>(
-      `${this.url(tournamentId)}/${categoryId}/results`
+      `${this.resultUrl(tournamentId)}/${categoryId}`
     );
   }
 

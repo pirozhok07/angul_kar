@@ -10,7 +10,7 @@ from ..tournament_models import (
     Athlete,
     KumiteDrawEntry,
     KumiteDrawMatch,
-    KumiteResult,
+    Result,
     KumiteTatami,
     CategoryTatami,
     BronzeMatchResult,
@@ -358,13 +358,13 @@ def finalize_category(db: Session, category_id: int) -> bool:
     if not set(result_ids).issubset(athlete_ids):
         return False
 
-    db.query(KumiteResult).filter(
-        KumiteResult.category_id == category_id
+    db.query(Result).filter(
+        Result.category_id == category_id
     ).delete(synchronize_session=False)
 
     for item in results:
         db.add(
-            KumiteResult(
+            Result(
                 category_id=category_id,
                 athlete_id=item["athlete_id"],
                 place=item["place"]
@@ -772,7 +772,7 @@ def set_bronze_winner(
 # RESULTS
 # =========================================================
 
-def serialize_result(result: KumiteResult):
+def serialize_result(result: Result):
     athlete = result.athlete
 
     return {

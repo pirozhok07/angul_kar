@@ -286,7 +286,8 @@
 
                                   <td>
                                     @if (participant.athlete_id) {
-                                      {{ getAthleteName(participant.athlete_id) }}
+                                      {{ participant.athlete }}
+                                      <small>{{ participant.club }}</small>
                                     } @else {
                                       Группа ката #{{ participant.kata_group_id }}
                                     }
@@ -296,10 +297,12 @@
                                     <td>
                                       <input
                                         class="score-input"
+                                        [ngClass]="getScoreClass(getScores(category.category_id, participant.id), judge)"
                                         type="number"
                                         min="6"
                                         max="8"
                                         step="0.1"
+                                        placeholder="7"
                                         [disabled]="round.status === 'completed'"
                                         [ngModel]="getScores(category.category_id, participant.id)[judge]"
                                         (ngModelChange)="updateScore(category.category_id, participant.id, judge, $event)"
@@ -350,7 +353,8 @@
                                   <td>{{ result.place }}</td>
                                   <td>
                                     @if (result.athlete_id) {
-                                      Спортсмен #{{ result.athlete_id }}
+                                      {{ result.full_name }}
+                                      <small>{{ result.club }}</small>
                                     } @else {
                                       Группа ката #{{ result.kata_group_id }}
                                     }

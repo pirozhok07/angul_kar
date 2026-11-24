@@ -13,6 +13,9 @@ export class KumiteCompetitionService {
     return `${this.apiUrl}/${tournamentId}/kumite-competition`;
   }
 
+  private url(tournamentId: number): string {
+    return `${this.apiUrl}/${tournamentId}`;
+  }
   private kumiteUrl(tournamentId: number, categoryId: number): string {
     return `${this.apiUrl}/${tournamentId}/draw/kumite/${categoryId}`;
   }  
@@ -92,7 +95,7 @@ export class KumiteCompetitionService {
 
   getResults(tournamentId: number): Observable<any[]> {
     return this.http.get<any[]>(
-      `${this.kumiteCompetitionUrl(tournamentId)}/results`
+      `${this.url(tournamentId)}/results`
     );
   }
   
@@ -101,7 +104,7 @@ export class KumiteCompetitionService {
     categoryId: number
   ): Observable<any[]> {
     return this.http.get<any[]>(
-      `${this.kumiteCompetitionUrl(tournamentId)}/results/${categoryId}`
+      `${this.url(tournamentId)}/results/${categoryId}`
     );
   }
   
@@ -110,7 +113,7 @@ export class KumiteCompetitionService {
     categoryId: number
   ): Observable<any> {
     return this.http.post<any>(
-      `${this.kumiteCompetitionUrl(tournamentId)}/results/${categoryId}/finalize`,
+      `${this.url(tournamentId)}/results/${categoryId}/finalize`,
       {}
     );
   }

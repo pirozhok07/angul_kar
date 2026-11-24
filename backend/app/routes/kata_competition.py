@@ -6,14 +6,16 @@ from typing import Optional
 
 from app.tournament_database import get_tournament_db
 from app.tournament_models import (
+    Athlete,
     Category,
     CategoryDistribution,
     CategoryTatami,
+    Club,
     KataCompetition,
     KataRound,
     KataRoundParticipant,
     KataScore,
-    KataCompetitionResult,
+    Result,
     KataTatami,
 )
 
@@ -47,6 +49,18 @@ router = APIRouter(
 # ---------------------------------------------------------
 # Вспомогательные функции
 # ---------------------------------------------------------
+
+def get_athlete(db: Session, athlete_id: int):
+    athlete = db.get(Athlete, athlete_id)
+    club = db.get(Club, athlete.club_id)
+
+    if not athlete or not club:
+        raise HTTPException(404, "athlete, club по ката не найдено")
+
+    return {
+        'athlete': f'{athlete.last_name} {athlete.first_name}',
+        'club': club.name
+    }
 
 def get_competition_db(db: Session, category_id: int):
     competition = (
@@ -349,21 +363,37 @@ def get_ranking(db: Session, round_id: int):
 
 
 def find_cutoff_tie(ranking: list, limit: int):
-    if len(ranking) <= limit:
+    if len(ranking) <= limit or limit <= 0:
         return []
 
     boundary = ranking[limit - 1]
 
+    boundary_key = (
+        boundary["total"],
+        boundary["max"],
+        boundary["min"]
+    )
+
     tied = [
         item for item in ranking
         if (
-            item["total"] == boundary["total"]
-            and item["max"] == boundary["max"]
-            and item["min"] == boundary["min"]
-        )
+            item["total"],
+            item["max"],
+            item["min"]
+        ) == boundary_key
     ]
 
-    if len(tied) <= 1:
+    # Дополнительный круг нужен только тогда,
+    # когда ничья пересекает границу прохода.
+    tied_inside = any(
+        ranking.index(item) < limit for item in tied
+    )
+
+    tied_outside = any(
+        ranking.index(item) >= limit for item in tied
+    )
+
+    if not tied_inside or not tied_outside:
         return []
 
     return tied
@@ -566,7 +596,7 @@ def finish_round(
             "Сначала необходимо выставить оценки всем участникам"
         )
 
-    competition = (
+    category = (
         db.query(KataCompetition)
         .filter(KataCompetition.id == kata_round.competition_id)
         .first()
@@ -575,7 +605,7 @@ def finish_round(
     regular_rounds = (
         db.query(KataRound)
         .filter(
-            KataRound.competition_id == competition.id,
+            KataRound.competition_id == category.id,
             KataRound.round_type == "regular"
         )
         .order_by(KataRound.number)
@@ -600,7 +630,7 @@ def finish_round(
 
             next_round = create_round(
                 db,
-                competition.id,
+                category.id,
                 kata_round.number + 1,
                 [
                     make_participant_data(item)
@@ -616,7 +646,7 @@ def finish_round(
                 "message": "Все участники проходят в следующий круг"
             }
 
-        save_small_category_results(db, competition, regular_rounds)
+        save_small_category_results(db, category, regular_rounds)
         db.commit()
 
         return {
@@ -627,7 +657,7 @@ def finish_round(
 
     # Для остальных категорий всего три обычных круга.
     if kata_round.number == 3:
-        save_final_round_results(db, competition, kata_round)
+        save_final_round_results(db, category, kata_round)
         db.commit()
 
         return {
@@ -667,7 +697,7 @@ def finish_round(
 
         tie_round = create_round(
             db,
-            competition.id,
+            category.id,
             100 + kata_round.number,
             tied_participants,
             round_type="tiebreak",
@@ -695,7 +725,7 @@ def finish_round(
 
     next_round = create_round(
         db,
-        competition.id,
+        category.id,
         kata_round.number + 1,
         [
             make_participant_data(item["participant"])
@@ -757,15 +787,15 @@ def save_final_round_results(
 ):
     ranking = get_ranking(db, kata_round.id)
 
-    db.query(KataCompetitionResult).filter(
-        KataCompetitionResult.competition_id == competition.id
+    db.query(Result).filter(
+        Result.category_id == competition.id
     ).delete(synchronize_session=False)
 
     for place, item in enumerate(ranking, start=1):
         participant = item["participant"]
 
-        db.add(KataCompetitionResult(
-            competition_id=competition.id,
+        db.add(Result(
+            category_id=competition.id,
             athlete_id=participant.athlete_id,
             kata_group_id=participant.kata_group_id,
             place=place
@@ -810,10 +840,7 @@ def finish_tiebreak(
     tie_round = get_round(db, round_id)
 
     if tie_round.round_type != "tiebreak":
-        raise HTTPException(
-            400,
-            "Это не дополнительный раунд"
-        )
+        raise HTTPException(400, "Это не дополнительный раунд")
 
     if not score_is_complete(db, tie_round):
         raise HTTPException(
@@ -829,21 +856,41 @@ def finish_tiebreak(
             "Основной круг ещё не завершён"
         )
 
-    ranking = get_ranking(db, tie_round.id)
+    competition = (
+        db.query(KataCompetition)
+        .filter(KataCompetition.id == tie_round.competition_id)
+        .first()
+    )
+
+    regular_rounds = (
+        db.query(KataRound)
+        .filter(
+            KataRound.competition_id == competition.id,
+            KataRound.round_type == "regular"
+        )
+        .order_by(KataRound.number)
+        .all()
+    )
+
+    participant_count = len(
+        get_round_participants(db, regular_rounds[0].id)
+    )
 
     limit = tie_round.advancement_limit
 
-    source_ranking = get_ranking(db, source_round.id)
+    # Для категории из 4 участников рейтинг второго круга
+    # рассчитывается по сумме первого и второго кругов.
+    if participant_count == 4 and source_round.number == 2:
+        source_ranking = get_cumulative_ranking(
+            db,
+            regular_rounds[:2]
+        )
+    else:
+        source_ranking = get_ranking(db, source_round.id)
 
-    already_selected = [
-        item for item in source_ranking
-        if item["participant"].id not in {
-            tied["participant"].id
-            for tied in find_cutoff_tie(source_ranking, limit)
-        }
-    ]
+    # Рейтинг дополнительного круга
+    tie_ranking = get_ranking(db, tie_round.id)
 
-    # Участники выше границы проходят автоматически.
     tied = find_cutoff_tie(source_ranking, limit)
 
     tied_keys = {
@@ -851,24 +898,45 @@ def finish_tiebreak(
         for item in tied
     }
 
+    # Участники, проходящие без дополнительного круга
     fixed = [
-        item for item in source_ranking
-        if participant_key(item["participant"]) not in tied_keys
-        and source_ranking.index(item) < limit
+        item
+        for index, item in enumerate(source_ranking)
+        if (
+            index < limit
+            and participant_key(item["participant"])
+            not in tied_keys
+        )
     ]
 
     needed = limit - len(fixed)
 
-    selected_tie = ranking[:needed]
+    if needed <= 0:
+        raise HTTPException(
+            400,
+            "Не удалось определить участников, проходящих дальше"
+        )
+
+    # Из дополнительного круга выбираем только необходимое
+    selected_tie = tie_ranking[:needed]
+
+    if len(selected_tie) < needed:
+        raise HTTPException(
+            400,
+            "Недостаточно участников в дополнительном круге"
+        )
 
     selected = fixed + selected_tie
 
-    next_round_number = source_round.number + 1
+    # Сохраняем исходный порядок жеребьёвки
+    selected.sort(
+        key=lambda item: item["participant"].position
+    )
 
     next_round = create_round(
         db,
         tie_round.competition_id,
-        next_round_number,
+        source_round.number + 1,
         [
             make_participant_data(item["participant"])
             for item in selected
@@ -1059,7 +1127,7 @@ def get_results(
     return [
         {
             "place": item.place,
-            "athlete_id": item.athlete_id,
+            **get_athlete(db, item.athlete_id),
             "kata_group_id": item.kata_group_id
         }
         for item in results
@@ -1105,9 +1173,10 @@ def get_competition(
             result_participants.append({
                 "id": participant.id,
                 "athlete_id": participant.athlete_id,
+                **get_athlete(db, participant.athlete_id),
                 "kata_group_id": participant.kata_group_id,
                 "position": participant.position,
-                "score": {
+                "scores": {
                     "score1": score.score1,
                     "score2": score.score2,
                     "score3": score.score3,

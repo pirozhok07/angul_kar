@@ -454,3 +454,40 @@
       grid-template-columns: 1fr;
     }
   }
+
+  .score-input {
+    width: 65px;
+    padding: 8px 5px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+  
+    &:disabled {
+      background: #f3f4f6;
+    }
+  }
+
+  .total-score {
+    font-weight: 700;
+    font-size: 16px;
+  }
+  
+  .saved {
+    color: #16a34a;
+    font-size: 13px;
+  }
+
+  .min-score {
+    background: #ffcdd2 !important;
+    color: #b71c1c !important;
+    font-weight: 700;
+    border: 2px solid #e53935 !important;
+  }
+  
+  .max-score {
+    background: #c8e6c9 !important;
+    color: #1b5e20 !important;
+    font-weight: 700;
+    border: 2px solid #43a047 !important;
+  }

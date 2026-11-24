@@ -28,6 +28,7 @@ export class Kata implements OnInit {
   tournamentId = 0;
 
   // Данные
+  athletes = signal<any[]>([]);
   categories = signal<any[]>([]);
   tatamis = signal<any[]>([]);
   assignments = signal<any[]>([]);
@@ -609,6 +610,23 @@ export class Kata implements OnInit {
     return [6, 6, 6, 6, 6];
   }
 
+  getScoreClass(scores: number[], index: number): string {
+    if (!scores || scores.length === 0) return '';
+    
+    const min = Math.min(...scores);
+    const max = Math.max(...scores);
+
+    const minIndex = scores.indexOf(min);
+    const maxIndex = min === max 
+      ? scores.length - 1
+      : scores.indexOf(max);
+
+    if (index === minIndex) return 'min-score';
+    if (index === maxIndex) return 'max-score';
+    
+    return '';
+  }
+
   updateScore(
     categoryId: number,
     participantId: number,
@@ -688,33 +706,56 @@ export class Kata implements OnInit {
   // Завершение раунда
   // ─────────────────────────────
 
-  finishRound(
-    categoryId: number,
-    roundId: number
-  ): void {
-    if (!confirm('Завершить раунд?')) return;
-
+  finishRound(categoryId: number, roundId: number): void {
+    const competition = this.competitionFor(categoryId);
+    const round = competition?.rounds?.find(
+      (r: any) => Number(r.id) === Number(roundId)
+    );
+  
+    if (!round) return;
+  
     this.saving.set(true);
     this.error.set('');
-
+    this.success.set('');
+  
+    // Если это дополнительный круг — завершаем тай-брейк
+    if (round.round_type === 'tiebreak') {
+      this.service.finishTiebreak(
+        this.tournamentId,
+        roundId
+      ).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.loadCompetition(categoryId);
+          this.loadResults(categoryId);
+        },
+        error: (err: any) => {
+          this.saving.set(false);
+          this.handleError(err);
+        }
+      });
+  
+      return;
+    }
+  
+    // Обычный круг
     this.service.finishRound(
       this.tournamentId,
       roundId
     ).subscribe({
       next: (data: any) => {
         this.saving.set(false);
-
+  
+        // Если возникла ничья — загружаем дополнительный круг
+        // НЕ завершаем его автоматически!
         if (data?.tiebreak_required) {
-          this.service.finishTiebreak(
-            this.tournamentId,
-            roundId
-          ).subscribe({
-            next: () => this.loadCompetition(categoryId),
-            error: (err: any) => this.handleError(err)
-          });
-        } else {
           this.loadCompetition(categoryId);
+          this.success.set('Назначен дополнительный круг. Внесите оценки.');
+          return;
         }
+  
+        this.loadCompetition(categoryId);
+        this.loadResults(categoryId);
       },
       error: (err: any) => {
         this.saving.set(false);
@@ -758,19 +799,4 @@ export class Kata implements OnInit {
     );
   }
 
-  // ─────────────────────────────
-  // участники
-  // ─────────────────────────────
-
-  getAthleteName(athleteId: number): string {
-    athlete = this.
-    console.log(athlete);
-    
-    return athlete.full_name ||
-      [
-        athlete.last_name,
-        athlete.first_name,
-        athlete.second_name
-      ].filter(Boolean).join(' ');
-  }
 }
