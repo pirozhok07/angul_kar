@@ -1,11 +1,30 @@
 from datetime import date
 from decimal import Decimal
-from sqlalchemy import CheckConstraint, Float, String, Integer, Date, Numeric, Boolean, Column, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Float,
+    String,
+    Integer,
+    Date,
+    Numeric,
+    Boolean,
+    Column,
+    ForeignKey,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
+# ==============================
+# BASE
+# ==============================
+
 class TournamentBase(DeclarativeBase):
     pass
+
+# ==============================
+# ATHLETES
+# ==============================
 
 class Athlete(TournamentBase):
     __tablename__ = "athletes"
@@ -28,20 +47,25 @@ class Athlete(TournamentBase):
     registration_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
 
     club = relationship("Club")
+    coach = relationship("Coach")
 
     club_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("clubs.id", ondelete="SET NULL"), 
-        nullable=False,
+        Integer,
+        ForeignKey("clubs.id", ondelete="SET NULL"),
+        nullable=True,
         index=True
     )
 
     coach_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("coaches.id", ondelete="SET NULL"), 
-        nullable=False,
+        Integer,
+        ForeignKey("coaches.id", ondelete="SET NULL"),
+        nullable=True,
         index=True
     )
+
+# ==============================
+# CATEGORIES
+# ==============================
 
 class Category(TournamentBase):
     __tablename__ = "categories"
@@ -76,18 +100,22 @@ class Category(TournamentBase):
         ),
     )
 
+# ==============================
+# ATHLETE-CATEGORY ASSOCIATION
+# ==============================
+
 class AthleteCategory(TournamentBase):
     __tablename__ = "athlete_categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     athlete_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
         nullable=False
     )
     category_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("categories.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
         nullable=False
     )
 
@@ -98,6 +126,10 @@ class AthleteCategory(TournamentBase):
             name="uq_athlete_category"
         ),
     )
+
+# ==============================
+# CLUBS AND COACHES
+# ==============================
 
 class Club(TournamentBase):
     __tablename__ = "clubs"
@@ -114,9 +146,9 @@ class Coach(TournamentBase):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
 
     club_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("clubs.id", ondelete="SET NULL"), 
-        nullable=False,
+        Integer,
+        ForeignKey("clubs.id", ondelete="SET NULL"),
+        nullable=True,
         index=True
     )
 
@@ -130,6 +162,10 @@ class Coach(TournamentBase):
         ),
     )
 
+# ==============================
+# KATA GROUPS
+# ==============================
+
 class KataGroup(TournamentBase):
     __tablename__ = "kata_groups"
 
@@ -137,8 +173,8 @@ class KataGroup(TournamentBase):
     name: Mapped[str] = mapped_column(String(150), nullable=False)
 
     category_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("categories.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -150,22 +186,22 @@ class KataGroup(TournamentBase):
             name="uq_kata_group_category"
         ),
     )
-    
+
 class KataGroupAthlete(TournamentBase):
     __tablename__ = "kata_group_athletes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     kata_group_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("kata_groups.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("kata_groups.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
 
     athlete_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -178,29 +214,33 @@ class KataGroupAthlete(TournamentBase):
         ),
     )
 
+# ==============================
+# CATEGORY DISTRIBUTION
+# ==============================
+
 class CategoryDistribution(TournamentBase):
     __tablename__ = "category_distributions"
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     draw_order: Mapped[int] = mapped_column(Integer, nullable=True)
 
     category_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("categories.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
 
     athlete_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
         nullable=True,
         index=True
     )
 
     kata_group_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("kata_groups.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("kata_groups.id", ondelete="CASCADE"),
         nullable=True,
         index=True
     )
@@ -226,17 +266,25 @@ class CategoryDistribution(TournamentBase):
         )
     )
 
+# ==============================
+# UNDISTRIBUTION / EXCLUSIONS
+# ==============================
+
 class Undistribution(TournamentBase):
     __tablename__ = "undistributions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     reason: Mapped[str] = mapped_column(String(300), nullable=False)
     athlete_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("athletes.id", ondelete="CASCADE"), 
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
+
+# ==============================
+# KUMITE DRAW
+# ==============================
 
 class KumiteDrawEntry(TournamentBase):
     __tablename__ = "kumite_draw_entries"
@@ -316,6 +364,10 @@ class KumiteDrawMatch(TournamentBase):
         ),
     )
 
+# ==============================
+# TATAMI
+# ==============================
+
 class KumiteTatami(TournamentBase):
     __tablename__ = "kumite_tatamis"
 
@@ -359,6 +411,10 @@ class CategoryTatami(TournamentBase):
         index=True
     )
 
+# ==============================
+# MATCHES AND RESULTS
+# ==============================
+
 class BronzeMatchResult(TournamentBase):
     __tablename__ = "bronze_match_results"
 
@@ -395,6 +451,43 @@ class BronzeMatchResult(TournamentBase):
 
     status: Mapped[str] = Column(String(20), nullable=False, default="pending")
 
+class KumiteResult(TournamentBase):
+    __tablename__ = "kumite_results"
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    category_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    athlete_id: Mapped[int] = Column(
+        Integer,
+        ForeignKey("athletes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    place: Mapped[int] = Column(Integer, nullable=False)
+
+    athlete = relationship("Athlete")
+    category = relationship("Category")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "category_id",
+            "athlete_id",
+            name="uq_kumite_result_athlete"
+        ),
+        UniqueConstraint(
+            "category_id",
+            "place",
+            name="uq_kumite_result_place"
+        ),
+    )
+
+# ==============================
+# KATA COMPETITION AND ROUNDS
+# ==============================
 
 class KataCompetition(TournamentBase):
     __tablename__ = "kata_competitions"
@@ -438,8 +531,11 @@ class KataRound(TournamentBase):
             name="uq_kata_round_competition_number"
         ),
     )
-    
 
+
+# ==============================
+# KATA ROUND PARTICIPANTS
+# ==============================
 
 class KataRoundParticipant(TournamentBase):
     __tablename__ = "kata_round_participants"
@@ -492,6 +588,10 @@ class KataRoundParticipant(TournamentBase):
     )
 
 
+# ==============================
+# KATA SCORES
+# ==============================
+
 class KataScore(TournamentBase):
     __tablename__ = "kata_scores"
 
@@ -517,8 +617,9 @@ class KataScore(TournamentBase):
 
     is_confirmed = Column(Boolean, nullable=False, default=False)
 
-class Result(TournamentBase):
-    __tablename__ = "results"
+
+class KataCompetitionResult(TournamentBase):
+    __tablename__ = "kata_competition_results"
 
     id: Mapped[int] = Column(Integer, primary_key=True, index=True)
     category_id: Mapped[int] = Column(

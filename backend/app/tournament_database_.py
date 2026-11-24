@@ -4,7 +4,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import Depends, HTTPException
 
-from app.database import DATABASE_URL, get_db
+from backend.app.database_ import DATABASE_URL, get_db
 from app.models import Tournament
 from app.tournament_models import TournamentBase, Athlete, Category, AthleteCategory
 

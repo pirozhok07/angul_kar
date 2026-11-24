@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.tournament_database import get_tournament_db
+from backend.app.tournament_database_ import get_tournament_db
 from app.tournament_models import (
     Category,
     CategoryDistribution,
@@ -17,7 +17,7 @@ from app.tournament_models import (
     KumiteDrawEntry,
     KumiteDrawMatch,
 )
-from app.routes.kumite_competition import finalize_category
+from app.routers.kumite_competition import finalize_category
 
 
 router = APIRouter(
